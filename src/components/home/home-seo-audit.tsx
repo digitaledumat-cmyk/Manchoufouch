@@ -47,12 +47,16 @@ export function HomeSeoAudit() {
 
   function handleAnalyze(event: React.FormEvent) {
     event.preventDefault();
-    const value = url.trim();
+    const value = url.trim().replace(/^\/\//, "");
 
     if (!value) {
-      setError("Saisissez une URL à analyser.");
+      setError("Saisissez un site à analyser (ex. exemple.ma).");
       return;
     }
+
+    // Accepte exemple.ma ou https://exemple.ma
+    const normalized =
+      /^https?:\/\//i.test(value) ? value : `https://${value}`;
 
     setError(null);
     setWarning(null);
@@ -61,7 +65,7 @@ export function HomeSeoAudit() {
         const response = await fetch("/api/seo/audit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: value }),
+          body: JSON.stringify({ url: normalized }),
         });
         const data = (await response.json()) as {
           result?: AuditPayload;
@@ -123,15 +127,19 @@ export function HomeSeoAudit() {
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
         >
           <div className="flex-1 space-y-2">
-            <Label htmlFor="audit-url">URL du site</Label>
+            <Label htmlFor="audit-url">Site web</Label>
             <Input
               id="audit-url"
-              type="url"
+              type="text"
               inputMode="url"
-              placeholder="https://votresite.ma"
+              autoComplete="url"
+              placeholder="exemple.ma ou https://exemple.ma"
               value={url}
               onChange={(event) => setUrl(event.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Pas besoin de https:// — un domaine comme exemple.ma suffit.
+            </p>
           </div>
           <Button type="submit" size="lg" disabled={isPending} className="sm:mb-0.5">
             {isPending ? (
