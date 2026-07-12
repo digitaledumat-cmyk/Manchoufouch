@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { RecaptchaV2 } from "@/components/security/recaptcha-v2";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,19 +25,32 @@ export function LoginForm() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const captchaRequired = Boolean(
+    process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY?.trim(),
+  );
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    if (captchaRequired && !captchaToken) {
+      setError("Veuillez valider le reCAPTCHA.");
+      return;
+    }
     setLoading(true);
     try {
-      await login({ email, password });
+      await login({
+        email,
+        password,
+        captchaToken: captchaToken || undefined,
+      });
       const next = searchParams.get("next") || "/dashboard/create-article";
       router.push(next);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connexion impossible.");
+      setCaptchaToken(null);
     } finally {
       setLoading(false);
     }
@@ -72,6 +86,7 @@ export function LoginForm() {
               required
             />
           </div>
+          <RecaptchaV2 onChange={setCaptchaToken} />
           {error ? (
             <p className="text-sm text-destructive" role="alert">
               {error}
@@ -79,7 +94,10 @@ export function LoginForm() {
           ) : null}
         </CardContent>
         <CardFooter className="flex flex-col items-stretch gap-3">
-          <Button type="submit" disabled={loading}>
+          <Button
+            type="submit"
+            disabled={loading || (captchaRequired && !captchaToken)}
+          >
             {loading ? <Loader2 className="size-4 animate-spin" /> : null}
             Se connecter
           </Button>

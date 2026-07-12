@@ -19,8 +19,13 @@ type AuthContextValue = {
     name: string;
     email: string;
     password: string;
+    captchaToken?: string;
   }) => Promise<void>;
-  login: (input: { email: string; password: string }) => Promise<void>;
+  login: (input: {
+    email: string;
+    password: string;
+    captchaToken?: string;
+  }) => Promise<void>;
   logout: () => void;
   buyPack: (packId: string) => Promise<void>;
   useCredit: () => Promise<AuthSession>;
@@ -62,7 +67,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshSession]);
 
   const register = useCallback(
-    async (input: { name: string; email: string; password: string }) => {
+    async (input: {
+      name: string;
+      email: string;
+      password: string;
+      captchaToken?: string;
+    }) => {
       const response = await fetch("/api/auth/register", {
         method: "POST",
         credentials: "include",
@@ -76,7 +86,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const login = useCallback(
-    async (input: { email: string; password: string }) => {
+    async (input: {
+      email: string;
+      password: string;
+      captchaToken?: string;
+    }) => {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         credentials: "include",

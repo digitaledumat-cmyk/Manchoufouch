@@ -5,6 +5,7 @@ import {
   registerUserServer,
 } from "@/lib/auth/server-store";
 import { encodeSession, sessionCookieOptions } from "@/lib/auth/session";
+import { verifyRecaptchaToken } from "@/lib/security/recaptcha";
 
 export async function POST(request: Request) {
   try {
@@ -12,7 +13,13 @@ export async function POST(request: Request) {
       name?: string;
       email?: string;
       password?: string;
+      captchaToken?: string;
     };
+
+    const captcha = await verifyRecaptchaToken(body.captchaToken);
+    if (!captcha.ok) {
+      return NextResponse.json({ error: captcha.error }, { status: 400 });
+    }
 
     const user = await registerUserServer({
       name: body.name || "",
