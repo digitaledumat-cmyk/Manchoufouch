@@ -36,6 +36,7 @@ type AuditPayload = SeoAuditResult & {
   mode?: "live" | "pagespeed" | "simulation";
   note?: string;
   scoreSource?: "pagespeed" | "onpage";
+  pagespeedError?: string;
 };
 
 export function HomeSeoAudit() {
@@ -77,7 +78,9 @@ export function HomeSeoAudit() {
           throw new Error(data.error || "L'audit SEO a échoué.");
         }
         setResult(data.result);
-        if (data.warning) setWarning(data.warning);
+        if (data.warning || data.result.pagespeedError) {
+          setWarning(data.warning || data.result.pagespeedError || null);
+        }
       } catch (err) {
         setResult(null);
         setError(err instanceof Error ? err.message : "Audit impossible.");
@@ -179,11 +182,16 @@ export function HomeSeoAudit() {
                   Analysé le{" "}
                   {new Date(result.analyzedAt).toLocaleString("fr-FR")}
                   {result.mode === "pagespeed"
-                    ? " · scores Google PageSpeed"
+                    ? " · scores Google PageSpeed (réels)"
                     : result.mode === "live"
-                      ? " · analyse on-page"
+                      ? " · estimation on-page (PageSpeed non disponible)"
                       : " · estimation"}
                 </p>
+                {result.mode === "pagespeed" ? (
+                  <p className="text-xs font-medium text-emerald-700">
+                    Scores Lighthouse officiels Google (mobile).
+                  </p>
+                ) : null}
               </div>
               <ScoreRing
                 score={result.overall}

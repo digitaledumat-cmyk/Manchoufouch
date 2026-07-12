@@ -14,7 +14,11 @@ export type PageSpeedScores = {
   strategy: "mobile" | "desktop";
 };
 
-function getPsiKey() {
+export type PageSpeedFetchResult =
+  | { ok: true; scores: PageSpeedScores }
+  | { ok: false; error: string };
+
+export function getPageSpeedApiKey() {
   return (
     process.env.PAGESPEED_API_KEY?.trim() ||
     process.env.GOOGLE_PSI_API_KEY?.trim() ||
@@ -46,31 +50,51 @@ function auditDisplay(
 /** Scores officiels Google PageSpeed / Lighthouse (mobile). */
 export async function fetchPageSpeedScores(
   url: string,
-): Promise<PageSpeedScores | null> {
-  const key = getPsiKey();
+): Promise<PageSpeedFetchResult> {
+  const key = getPageSpeedApiKey();
+  if (!key) {
+    return {
+      ok: false,
+      error:
+        "PAGESPEED_API_KEY manquante. Ajoutez-la dans .env.local et dans Vercel → Environment Variables, puis redéployez.",
+    };
+  }
+
   const endpoint = new URL(
     "https://www.googleapis.com/pagespeedonline/v5/runPagespeed",
   );
   endpoint.searchParams.set("url", url);
   endpoint.searchParams.set("strategy", "mobile");
-  endpoint.searchParams.set("category", "PERFORMANCE");
-  endpoint.searchParams.append("category", "ACCESSIBILITY");
-  endpoint.searchParams.append("category", "BEST_PRACTICES");
-  endpoint.searchParams.append("category", "SEO");
-  if (key) endpoint.searchParams.set("key", key);
+  endpoint.searchParams.set("locale", "fr");
+  for (const category of [
+    "PERFORMANCE",
+    "ACCESSIBILITY",
+    "BEST_PRACTICES",
+    "SEO",
+  ] as const) {
+    endpoint.searchParams.append("category", category);
+  }
+  endpoint.searchParams.set("key", key);
 
-  const response = await fetch(endpoint.toString(), {
-    signal: AbortSignal.timeout(60000),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(
-      `PageSpeed API (${response.status}) : ${detail.slice(0, 180)}`,
-    );
+  let response: Response;
+  try {
+    response = await fetch(endpoint.toString(), {
+      signal: AbortSignal.timeout(90000),
+      cache: "no-store",
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? `PageSpeed injoignable : ${error.message}`
+          : "PageSpeed injoignable.",
+    };
   }
 
-  const data = (await response.json()) as {
+  const raw = await response.text();
+  let data: {
+    error?: { message?: string; status?: string };
     lighthouseResult?: {
       categories?: Record<string, { score?: number | null }>;
       audits?: Record<
@@ -80,9 +104,40 @@ export async function fetchPageSpeedScores(
     };
   };
 
+  try {
+    data = JSON.parse(raw) as typeof data;
+  } catch {
+    return {
+      ok: false,
+      error: `Réponse PageSpeed invalide (HTTP ${response.status}).`,
+    };
+  }
+
+  if (!response.ok || data.error) {
+    const message =
+      data.error?.message ||
+      `Erreur PageSpeed HTTP ${response.status}`;
+    if (response.status === 403) {
+      return {
+        ok: false,
+        error:
+          "Clé refusée (403). Activez « PageSpeed Insights API » sur Google Cloud pour cette clé.",
+      };
+    }
+    if (response.status === 429) {
+      return {
+        ok: false,
+        error: "Quota PageSpeed dépassé. Réessayez dans quelques minutes.",
+      };
+    }
+    return { ok: false, error: message.slice(0, 280) };
+  }
+
   const categories = data.lighthouseResult?.categories;
   const audits = data.lighthouseResult?.audits ?? {};
-  if (!categories) return null;
+  if (!categories) {
+    return { ok: false, error: "PageSpeed n'a pas renvoyé de catégories Lighthouse." };
+  }
 
   const performance = score100(categories.performance?.score);
   const accessibility = score100(categories.accessibility?.score);
@@ -95,26 +150,32 @@ export async function fetchPageSpeedScores(
     bestPractices == null ||
     seo == null
   ) {
-    return null;
+    return {
+      ok: false,
+      error: "Scores PageSpeed incomplets (catégories manquantes).",
+    };
   }
 
   return {
-    performance,
-    accessibility,
-    bestPractices,
-    seo,
-    strategy: "mobile",
-    metrics: {
-      lcp: auditDisplay(audits, "largest-contentful-paint"),
-      inp: auditDisplay(
-        audits,
-        "interaction-to-next-paint",
-        auditDisplay(audits, "experimental-interaction-to-next-paint"),
-      ),
-      cls: auditDisplay(audits, "cumulative-layout-shift"),
-      fcp: auditDisplay(audits, "first-contentful-paint"),
-      tti: auditDisplay(audits, "interactive"),
-      speedIndex: auditDisplay(audits, "speed-index"),
+    ok: true,
+    scores: {
+      performance,
+      accessibility,
+      bestPractices,
+      seo,
+      strategy: "mobile",
+      metrics: {
+        lcp: auditDisplay(audits, "largest-contentful-paint"),
+        inp: auditDisplay(
+          audits,
+          "interaction-to-next-paint",
+          auditDisplay(audits, "experimental-interaction-to-next-paint"),
+        ),
+        cls: auditDisplay(audits, "cumulative-layout-shift"),
+        fcp: auditDisplay(audits, "first-contentful-paint"),
+        tti: auditDisplay(audits, "interactive"),
+        speedIndex: auditDisplay(audits, "speed-index"),
+      },
     },
   };
 }

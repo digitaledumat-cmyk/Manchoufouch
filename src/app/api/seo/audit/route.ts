@@ -20,6 +20,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         result,
         provider: result.mode === "pagespeed" ? "pagespeed" : "live",
+        warning: result.pagespeedError,
       });
     } catch (liveError) {
       // Fallback simulation si le site bloque le fetch

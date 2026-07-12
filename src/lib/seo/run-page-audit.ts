@@ -16,6 +16,8 @@ export type RealSeoAuditResult = SeoAuditResult & {
   checks: SeoCheck[];
   mode: "live" | "pagespeed";
   scoreSource?: "pagespeed" | "onpage";
+  /** Erreur PageSpeed si les scores Google n'ont pas pu être récupérés. */
+  pagespeedError?: string;
 };
 
 function normalizeUrl(raw: string) {
@@ -366,11 +368,14 @@ export async function runPageSeoAudit(rawUrl: string): Promise<RealSeoAuditResul
 
   let mode: RealSeoAuditResult["mode"] = "live";
   let scoreSource: RealSeoAuditResult["scoreSource"] = "onpage";
+  let pagespeedError: string | undefined;
 
   try {
     const { fetchPageSpeedScores } = await import("@/lib/seo/pagespeed");
-    const psi = await fetchPageSpeedScores(finalUrl);
-    if (psi) {
+    const psiResult = await fetchPageSpeedScores(finalUrl);
+
+    if (psiResult.ok) {
+      const psi = psiResult.scores;
       mode = "pagespeed";
       scoreSource = "pagespeed";
       categories[0].score = psi.performance;
@@ -393,14 +398,8 @@ export async function runPageSeoAudit(rawUrl: string): Promise<RealSeoAuditResul
         label: "LCP",
         value: lcpRaw,
         hint: "Google PageSpeed (mobile)",
-        status: metricStatus(
-          lcpRaw.toLowerCase().includes("ms") ? lcpNum : lcpNum,
-          2.5,
-          4,
-        ),
+        status: metricStatus(lcpNum, 2.5, 4),
       };
-      // For LCP in ms, convert: if value was in ms, parseMetricNumber already /1000
-      metrics[0].status = metricStatus(lcpNum, 2.5, 4);
 
       const inpNum = (() => {
         const match = psi.metrics.inp.replace(",", ".").match(/([\d.]+)/);
@@ -441,9 +440,14 @@ export async function runPageSeoAudit(rawUrl: string): Promise<RealSeoAuditResul
         hint: "Google PageSpeed (mobile)",
         status: metricStatus(parseMetricNumber(psi.metrics.speedIndex), 3.4, 5.8),
       };
+    } else {
+      pagespeedError = psiResult.error;
     }
-  } catch {
-    // Garde les scores on-page estimés si PageSpeed échoue
+  } catch (error) {
+    pagespeedError =
+      error instanceof Error
+        ? error.message
+        : "Échec inattendu de l'appel PageSpeed.";
   }
 
   const overallFinal = Math.round(
@@ -460,5 +464,6 @@ export async function runPageSeoAudit(rawUrl: string): Promise<RealSeoAuditResul
     checks,
     mode,
     scoreSource,
+    pagespeedError,
   };
 }
