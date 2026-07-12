@@ -14,14 +14,14 @@ export function HomeServices() {
       <div className="mb-16 grid items-center gap-10 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="relative mx-auto flex h-56 w-full max-w-sm items-center justify-center sm:h-64">
           <CircleMotionImage
-            src="/home/analytics-desk.png"
+            src="/home/analytics-desk.jpg"
             alt="Analytics SEO"
             size="lg"
             motion="float"
             className="absolute left-4 top-2 z-10"
           />
           <CircleMotionImage
-            src="/home/seo-google.png"
+            src="/home/seo-google.jpg"
             alt="Croissance Google SEO"
             size="md"
             motion="float-delayed"

@@ -45,7 +45,7 @@ export function HomeHero() {
 
         <div className="relative mx-auto flex h-[320px] w-full max-w-md items-center justify-center sm:h-[400px] lg:max-w-none lg:h-[460px]">
           <CircleMotionImage
-            src="/home/analytics-desk.png"
+            src="/home/analytics-desk.jpg"
             alt="Bureau analytics Google et tableaux de bord SEO"
             size="xl"
             motion="float"
@@ -53,7 +53,7 @@ export function HomeHero() {
             className="absolute left-2 top-6 z-10 sm:left-6 sm:top-4"
           />
           <CircleMotionImage
-            src="/home/seo-google.png"
+            src="/home/seo-google.jpg"
             alt="Illustration Google SEO en croissance"
             size="lg"
             motion="float-delayed"

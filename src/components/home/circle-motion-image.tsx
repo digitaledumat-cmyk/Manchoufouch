@@ -19,6 +19,15 @@ const SIZE_CLASS = {
   xl: "size-52 sm:size-64 md:size-72",
 } as const;
 
+/** Largeur CSS max affichée → évite de télécharger 384px pour ~200px. */
+const SIZE_ATTR = {
+  xs: "96px",
+  sm: "128px",
+  md: "176px",
+  lg: "256px",
+  xl: "288px",
+} as const;
+
 const MOTION_CLASS = {
   float: "animate-float",
   "float-delayed": "animate-float-delayed",
@@ -48,8 +57,9 @@ export function CircleMotionImage({
         alt={alt}
         fill
         priority={priority}
+        quality={65}
         className="object-cover"
-        sizes="(max-width: 768px) 180px, 288px"
+        sizes={SIZE_ATTR[size]}
       />
     </div>
   );

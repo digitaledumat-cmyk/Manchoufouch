@@ -21,7 +21,7 @@ export const HOME_STRATEGIC = [
     image:
       "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=900&q=80",
     imageAlt: "Équipe collaborant autour d'une stratégie digitale",
-    secondaryImage: "/home/seo-google.png",
+    secondaryImage: "/home/seo-google.jpg",
   },
   {
     id: "sur-mesure",
@@ -31,16 +31,16 @@ export const HOME_STRATEGIC = [
     image:
       "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=900&q=80",
     imageAlt: "Atelier stratégique pour définir une solution sur mesure",
-    secondaryImage: "/home/analytics-desk.png",
+    secondaryImage: "/home/analytics-desk.jpg",
   },
   {
     id: "transparence",
     eyebrow: "Strategic Thinking",
     title: "Transparence et résultats mesurables",
     text: "Chez Manchoufouch, la transparence est au cœur de notre approche. Nous vous tenons informé à chaque étape grâce à des rapports détaillés et des outils comme Google Analytics. Vous suivez l'évolution de votre projet en temps réel, avec des indicateurs clairs pour évaluer vos progrès. Nous sommes dédiés à fournir des résultats concrets et durables : meilleur classement sur les moteurs de recherche, augmentation du trafic, et retour sur investissement optimal.",
-    image: "/home/analytics-desk.png",
+    image: "/home/analytics-desk.jpg",
     imageAlt: "Suivi des résultats SEO avec Google Analytics",
-    secondaryImage: "/home/seo-google.png",
+    secondaryImage: "/home/seo-google.jpg",
   },
 ] as const;
 
@@ -71,7 +71,7 @@ export const HOME_SERVICES = [
       "Articles prêts pour le netlinking",
     ],
     href: "/dashboard/create-article",
-    image: "/home/seo-google.png",
+    image: "/home/seo-google.jpg",
     imageAlt: "Illustration Google SEO en croissance",
   },
   {
@@ -115,7 +115,7 @@ export const HOME_SERVICES = [
       "Optimisation continue SEO + Ads",
     ],
     href: "/pricing",
-    image: "/home/analytics-desk.png",
+    image: "/home/analytics-desk.jpg",
     imageAlt: "Bureau analytics Google et tableaux de bord",
   },
   {
@@ -244,7 +244,7 @@ export const HOME_PROCESS = [
     step: "04",
     title: "Mesure & optimisation",
     text: "Suivi des résultats et itérations continues pour renforcer votre positionnement.",
-    image: "/home/analytics-desk.png",
+    image: "/home/analytics-desk.jpg",
   },
 ] as const;
 
@@ -312,7 +312,7 @@ export const HOME_NEWS = [
       "Trafic immédiat via Ads pendant que votre référencement naturel monte en puissance.",
     date: "05 Mar, 2026",
     href: "/pricing",
-    image: "/home/seo-google.png",
+    image: "/home/seo-google.jpg",
   },
 ] as const;
 

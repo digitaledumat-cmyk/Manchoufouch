@@ -39,14 +39,14 @@ export function HomeCta() {
 
         <div className="relative mx-auto flex h-56 w-full max-w-sm items-center justify-center sm:h-64">
           <CircleMotionImage
-            src="/home/analytics-desk.png"
+            src="/home/analytics-desk.jpg"
             alt="Dashboard analytics"
             size="lg"
             motion="float"
             className="absolute left-2 top-0 z-10"
           />
           <CircleMotionImage
-            src="/home/seo-google.png"
+            src="/home/seo-google.jpg"
             alt="SEO Google"
             size="md"
             motion="sway"

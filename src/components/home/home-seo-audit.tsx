@@ -101,14 +101,14 @@ export function HomeSeoAudit() {
 
         <div className="relative mx-auto flex h-48 w-full max-w-sm items-center justify-center">
           <CircleMotionImage
-            src="/home/analytics-desk.png"
+            src="/home/analytics-desk.jpg"
             alt="Analyse de performance web"
             size="md"
             motion="float"
             className="absolute left-4 top-2 z-10"
           />
           <CircleMotionImage
-            src="/home/seo-google.png"
+            src="/home/seo-google.jpg"
             alt="Score SEO Google"
             size="sm"
             motion="float-delayed"

@@ -17,14 +17,14 @@ export function HomeResults() {
           </div>
           <div className="relative mx-auto flex h-40 w-56 items-center justify-center">
             <CircleMotionImage
-              src="/home/seo-google.png"
+              src="/home/seo-google.jpg"
               alt="Croissance SEO Google"
               size="md"
               motion="float"
               className="absolute left-0 z-10"
             />
             <CircleMotionImage
-              src="/home/analytics-desk.png"
+              src="/home/analytics-desk.jpg"
               alt="Résultats analytics"
               size="sm"
               motion="float-delayed"
