@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 160" role="img" aria-label="Manchoufouch">
+  <rect width="720" height="160" fill="#ffffff"/>
+  <!-- Mark -->
+  <g transform="translate(8,8)">
+    <path d="M16 118 H132" stroke="#0a0a0a" stroke-width="6" stroke-linecap="round"/>
+    <path d="M16 118 V28" stroke="#0a0a0a" stroke-width="6" stroke-linecap="round"/>
+    <rect x="28" y="88" width="14" height="30" rx="2" fill="#0a0a0a"/>
+    <rect x="50" y="70" width="14" height="48" rx="2" fill="#0a0a0a"/>
+    <rect x="72" y="50" width="14" height="68" rx="2" fill="#0a0a0a"/>
+    <path
+      d="M24 100 C48 96, 58 78, 74 60 C90 42, 102 38, 120 24"
+      fill="none"
+      stroke="#0a0a0a"
+      stroke-width="8"
+      stroke-linecap="round"
+    />
+    <path d="M108 22 L128 18 L122 38 Z" fill="#0a0a0a"/>
+  </g>
+  <!-- Wordmark -->
+  <text
+    x="168"
+    y="98"
+    font-family="Arial Black, Helvetica Neue, Arial, sans-serif"
+    font-size="56"
+    font-weight="800"
+    fill="#0a0a0a"
+    letter-spacing="-1.5"
+  >Manchoufouch</text>
+</svg>

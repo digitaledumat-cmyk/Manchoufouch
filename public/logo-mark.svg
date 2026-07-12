@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Manchoufouch">
+  <rect width="512" height="512" fill="#ffffff"/>
+  <!-- Rising SEO curve -->
+  <path
+    d="M72 360 C140 350, 170 300, 210 250 C250 200, 280 190, 320 150 C360 110, 390 95, 430 70"
+    fill="none"
+    stroke="#0a0a0a"
+    stroke-width="28"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <!-- Arrow tip -->
+  <path
+    d="M392 68 L440 58 L426 108 Z"
+    fill="#0a0a0a"
+  />
+  <!-- Baseline chart ticks -->
+  <path d="M72 390 H440" stroke="#0a0a0a" stroke-width="10" stroke-linecap="round"/>
+  <path d="M72 390 V120" stroke="#0a0a0a" stroke-width="10" stroke-linecap="round"/>
+  <!-- Small ascending bars suggesting SEO growth -->
+  <rect x="110" y="310" width="28" height="80" rx="4" fill="#0a0a0a"/>
+  <rect x="160" y="270" width="28" height="120" rx="4" fill="#0a0a0a"/>
+  <rect x="210" y="220" width="28" height="170" rx="4" fill="#0a0a0a"/>
+</svg>
