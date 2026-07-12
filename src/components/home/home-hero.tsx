@@ -57,7 +57,6 @@ export function HomeHero() {
             alt="Illustration Google SEO en croissance"
             size="lg"
             motion="float-delayed"
-            priority
             className="absolute bottom-2 right-2 z-20 sm:bottom-6 sm:right-8"
           />
           <div className="absolute right-10 top-8 size-16 rounded-full border border-foreground/10 bg-background/60 animate-breathe sm:size-20" />

@@ -8,6 +8,7 @@ type CircleMotionImageProps = {
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   motion?: "float" | "float-delayed" | "breathe" | "sway";
   className?: string;
+  /** Image LCP / above-the-fold : eager + fetchPriority high (pas de lazy). */
   priority?: boolean;
 };
 
@@ -19,13 +20,13 @@ const SIZE_CLASS = {
   xl: "size-52 sm:size-64 md:size-72",
 } as const;
 
-/** Largeur CSS max affichée → évite de télécharger 384px pour ~200px. */
-const SIZE_ATTR = {
-  xs: "96px",
-  sm: "128px",
-  md: "176px",
-  lg: "256px",
-  xl: "288px",
+/** Pixels CSS max → srcset adapté (évite 384px pour ~200px). */
+const SIZE_PX = {
+  xs: 96,
+  sm: 128,
+  md: 176,
+  lg: 256,
+  xl: 288,
 } as const;
 
 const MOTION_CLASS = {
@@ -43,6 +44,8 @@ export function CircleMotionImage({
   className,
   priority = false,
 }: CircleMotionImageProps) {
+  const px = SIZE_PX[size];
+
   return (
     <div
       className={cn(
@@ -55,11 +58,14 @@ export function CircleMotionImage({
       <Image
         src={src}
         alt={alt}
-        fill
+        width={px}
+        height={px}
         priority={priority}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
         quality={65}
-        className="object-cover"
-        sizes={SIZE_ATTR[size]}
+        sizes={`${px}px`}
+        className="size-full object-cover"
       />
     </div>
   );
