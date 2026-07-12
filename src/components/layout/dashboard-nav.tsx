@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Coins, FileText, Shield, Tags, UserPlus } from "lucide-react";
+import { Coins, FileText, Shield, UserPlus } from "lucide-react";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { cn } from "@/lib/utils";
@@ -24,9 +24,9 @@ const CLIENT_ITEMS = [
     icon: FileText,
   },
   {
-    href: "/dashboard/annonces",
-    label: "Annonces",
-    icon: Tags,
+    href: "/dashboard/articles",
+    label: "Mes articles SEO",
+    icon: FileText,
   },
 ];
 
@@ -42,9 +42,9 @@ const ADMIN_ITEMS = [
     icon: FileText,
   },
   {
-    href: "/dashboard/annonces",
-    label: "Annonces",
-    icon: Tags,
+    href: "/dashboard/articles",
+    label: "Articles SEO",
+    icon: FileText,
   },
 ];
 

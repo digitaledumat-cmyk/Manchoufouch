@@ -22,7 +22,7 @@ export function HomeNews() {
             </p>
           </div>
           <Link
-            href="/dashboard/annonces"
+            href="/dashboard/articles"
             className={cn(buttonVariants({ variant: "outline" }))}
           >
             Voir tout

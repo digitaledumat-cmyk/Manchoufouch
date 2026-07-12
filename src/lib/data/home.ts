@@ -99,10 +99,10 @@ export const HOME_SERVICES = [
       "Suggestions de backlinks",
       "Publication multi-domaines",
     ],
-    href: "/dashboard/annonces",
+    href: "/dashboard/articles",
     image:
       "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=900&q=80",
-    imageAlt: "Catalogue d'annonces et produits en ligne",
+    imageAlt: "Articles SEO et backlinks pour le référencement",
   },
   {
     id: "analyse",

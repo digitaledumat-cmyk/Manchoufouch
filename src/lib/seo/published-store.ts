@@ -176,7 +176,7 @@ export function uniqueSlug(
 }
 
 export function publicPathForSlug(slug: string) {
-  return `/annonces/${slug}`;
+  return `/articles/${slug}`;
 }
 
 /** Enregistre (ou met à jour) un article validé — 1 article = 1 URL unique. */
@@ -199,7 +199,7 @@ export async function upsertPublishedArticle(
     collectReservedSlugs(articles).has(slug)
   ) {
     throw new Error(
-      `Le lien /annonces/${slug} est déjà utilisé. Changez le titre.`,
+      `Le lien /articles/${slug} est déjà utilisé. Changez le titre.`,
     );
   }
 
@@ -214,7 +214,7 @@ export async function upsertPublishedArticle(
     metaDescription: (input.metaDescription || input.content).slice(0, 160),
     keywords: input.keywords.length
       ? input.keywords
-      : ["SEO Maroc", "référencement Google"],
+      : ["SEO Maroc", "backlinks", "référencement Google"],
     headings: {
       h1: input.h1 || input.title,
       h2: [],

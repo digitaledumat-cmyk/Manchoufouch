@@ -74,17 +74,23 @@ export async function POST(request: Request) {
 
     const indexing = await requestSearchEngineIndexing([
       publicPath,
-      "/annonces",
+      "/articles",
       "/sitemap.xml",
     ]);
+
+    const indexingOk =
+      indexing.indexNow.ok || indexing.googlePing.ok || indexing.bingPing.ok;
 
     return NextResponse.json({
       ok: true,
       article: published,
       publicPath,
       publicUrl: publicPath,
-      message: `Page créée : ${publicPath}`,
+      message: indexingOk
+        ? `Article SEO publié : ${publicPath} — indexation lancée automatiquement.`
+        : `Article SEO publié : ${publicPath} — page en ligne (indexation à retrayer).`,
       indexing,
+      indexed: indexingOk,
     });
   } catch (error) {
     return NextResponse.json(

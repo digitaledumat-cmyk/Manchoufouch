@@ -84,7 +84,7 @@ export function buildArticleMetadata(article: Article): Metadata {
   return buildMetadata({
     title: article.title,
     description: article.metaDescription,
-    path: `/annonces/${article.slug}`,
+    path: `/articles/${article.slug}`,
     keywords: [...article.keywords, getDomainLabel(article.domain)],
     type: "article",
     publishedTime: article.publishedAt,

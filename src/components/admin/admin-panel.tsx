@@ -442,6 +442,7 @@ export function AdminPanel() {
           });
           const publishData = (await publishRes.json()) as {
             publicPath?: string;
+            indexed?: boolean;
             error?: string;
           };
           if (!publishRes.ok) {
@@ -449,11 +450,13 @@ export function AdminPanel() {
           }
           await refresh();
           setMessage(
-            `Page publique créée${
-              publishData.publicPath
-                ? ` : ${publishData.publicPath} (lien unique, pas de doublon)`
-                : ""
-            }. Indexation Google lancée.`,
+            publishData.indexed !== false
+              ? `Article SEO / backlink publié${
+                  publishData.publicPath ? ` : ${publishData.publicPath}` : ""
+                }. Indexation Google/Bing lancée automatiquement.`
+              : `Article SEO publié${
+                  publishData.publicPath ? ` : ${publishData.publicPath}` : ""
+                }. Page en ligne — vérifiez l'indexation.`,
           );
         } catch (err) {
           setMessage(
@@ -679,9 +682,10 @@ export function AdminPanel() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Articles postés en attente</CardTitle>
+          <CardTitle>Articles SEO en attente</CardTitle>
           <CardDescription>
-            Soumissions clients à valider, corriger ou supprimer.
+            Soumissions backlink / référencement à valider. La validation crée
+            la page publique et lance l&apos;indexation automatiquement.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

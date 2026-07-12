@@ -17,8 +17,8 @@ export default function AdminPage() {
       <div className="mb-8 space-y-2">
         <h1 className="text-3xl font-semibold tracking-tight">Panel admin</h1>
         <p className="text-muted-foreground">
-          Gérez les comptes clients, ajoutez des crédits, validez, corrigez ou
-          supprimez les articles.
+          Comptes clients, crédits, validation des articles SEO / backlinks.
+          À la validation : page publique unique + indexation automatique.
         </p>
       </div>
       <AdminPanel />

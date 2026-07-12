@@ -18,7 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${origin}/annonces`,
+      url: `${origin}/articles`,
       lastModified: now,
       changeFrequency: "daily",
       priority: 0.85,
@@ -44,14 +44,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   const demoArticles = getPublishedArticles().map((article) => ({
-    url: `${origin}/annonces/${article.slug}`,
+    url: `${origin}/articles/${article.slug}`,
     lastModified: new Date(article.updatedAt),
     changeFrequency: "weekly" as const,
     priority: 0.7,
   }));
 
   const clientArticles = (await readPublishedArticles()).map((article) => ({
-    url: `${origin}/annonces/${article.slug}`,
+    url: `${origin}/articles/${article.slug}`,
     lastModified: new Date(article.updatedAt),
     changeFrequency: "daily" as const,
     priority: 0.8,

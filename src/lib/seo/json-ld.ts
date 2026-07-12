@@ -25,7 +25,7 @@ export function websiteJsonLd() {
     inLanguage: "fr-FR",
     potentialAction: {
       "@type": "SearchAction",
-      target: `${SITE_CONFIG.url}/dashboard/annonces?q={search_term_string}`,
+      target: `${SITE_CONFIG.url}/articles?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
   };
@@ -55,7 +55,7 @@ export function articleJsonLd(article: Article) {
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": absoluteUrl(`/annonces/${article.slug}`),
+      "@id": absoluteUrl(`/articles/${article.slug}`),
     },
     articleSection: getDomainLabel(article.domain),
     about: getDomainLabel(article.domain),

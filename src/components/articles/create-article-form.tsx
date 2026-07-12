@@ -292,7 +292,7 @@ export function CreateArticleForm() {
         await refreshSession();
       }
       setSuccess(
-        `${data.message || `Article « ${title} » soumis pour validation admin.`} Après validation : indexation Google automatique. 1 crédit utilisé (${data.session?.credits ?? "?"} restant(s)).`,
+        `${data.message || `Article SEO « ${title} » soumis.`} Après validation admin : page publique unique + indexation Google automatique. 1 crédit utilisé (${data.session?.credits ?? "?"} restant(s)).`,
       );
       setBrief(null);
       setArticleBody("");
@@ -323,10 +323,10 @@ export function CreateArticleForm() {
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Créer un article SEO</CardTitle>
+            <CardTitle>Créer un article SEO / backlink</CardTitle>
             <CardDescription>
-              Lien du site + modèle IA pour générer le texte. Publier consomme{" "}
-              <strong>1 crédit</strong>.
+              Contenu de référencement (pas une annonce). Publier consomme{" "}
+              <strong>1 crédit</strong> — validation admin puis indexation auto.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">

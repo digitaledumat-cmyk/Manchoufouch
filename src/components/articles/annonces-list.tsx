@@ -59,9 +59,9 @@ export function AnnoncesList({ articles }: { articles: Article[] }) {
     <Card>
       <CardHeader className="gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <CardTitle>Annonces & articles</CardTitle>
+          <CardTitle>Articles SEO & backlinks</CardTitle>
           <CardDescription>
-            Filtrez par domaine pour retrouver vos contenus SEO déjà créés.
+            Contenus de référencement — filtrez par domaine.
           </CardDescription>
         </div>
         <div className="flex min-w-[220px] items-center gap-2">
@@ -139,7 +139,7 @@ export function AnnoncesList({ articles }: { articles: Article[] }) {
                     </TableCell>
                     <TableCell className="text-right">
                       <Link
-                        href={`/annonces/${article.slug}`}
+                        href={`/articles/${article.slug}`}
                         className={cn(
                           buttonVariants({ variant: "outline", size: "sm" }),
                         )}
