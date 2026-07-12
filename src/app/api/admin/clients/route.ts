@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import {
   getAdminStatsServer,
+  listArticlesServer,
   listClientsServer,
   publicSessionFromUser,
   registerUserServer,
@@ -11,11 +12,12 @@ import { requireAdminSession } from "@/lib/auth/session";
 export async function GET() {
   try {
     await requireAdminSession();
-    const [clients, stats] = await Promise.all([
+    const [clients, stats, articles] = await Promise.all([
       listClientsServer(),
       getAdminStatsServer(),
+      listArticlesServer(),
     ]);
-    return NextResponse.json({ clients, stats });
+    return NextResponse.json({ clients, stats, articles });
   } catch (error) {
     return NextResponse.json(
       {
@@ -35,6 +37,8 @@ export async function POST(request: Request) {
       email?: string;
       password?: string;
       credits?: number;
+      phone?: string;
+      companyWebsite?: string;
     };
 
     const user = await registerUserServer({
@@ -42,12 +46,15 @@ export async function POST(request: Request) {
       email: body.email || "",
       password: body.password || "",
       credits: body.credits,
+      phone: body.phone,
+      companyWebsite: body.companyWebsite,
       createdByAdmin: true,
     });
 
-    const [clients, stats] = await Promise.all([
+    const [clients, stats, articles] = await Promise.all([
       listClientsServer(),
       getAdminStatsServer(),
+      listArticlesServer(),
     ]);
 
     return NextResponse.json({
@@ -55,6 +62,7 @@ export async function POST(request: Request) {
       client: publicSessionFromUser(user).user,
       clients,
       stats,
+      articles,
       message: `Compte créé : ${user.email}`,
     });
   } catch (error) {

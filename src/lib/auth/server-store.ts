@@ -5,6 +5,8 @@ import { BlobPreconditionFailedError, get, put } from "@vercel/blob";
 
 import {
   DEFAULT_ADMIN,
+  normalizePhone,
+  normalizeWebsite,
   type AdminDashboardStats,
   type ClientArticle,
   type ClientPublicUser,
@@ -44,6 +46,8 @@ function normalizeUser(user: StoredUser): StoredUser {
     blocked: user.blocked ?? false,
     loginCount: user.loginCount ?? 0,
     lastLoginAt: user.lastLoginAt ?? null,
+    phone: normalizePhone(user.phone),
+    companyWebsite: normalizeWebsite(user.companyWebsite),
   };
 }
 
@@ -73,6 +77,8 @@ function seedAdmin(users: StoredUser[]): StoredUser[] {
     blocked: false,
     loginCount: 0,
     lastLoginAt: null,
+    phone: "",
+    companyWebsite: "",
     createdAt: new Date().toISOString(),
   };
   return [...normalized, admin];
@@ -336,6 +342,8 @@ export async function registerUserServer(input: {
   email: string;
   password: string;
   credits?: number;
+  phone?: string;
+  companyWebsite?: string;
   createdByAdmin?: boolean;
 }): Promise<StoredUser> {
   const db = await loadDb();
@@ -363,6 +371,8 @@ export async function registerUserServer(input: {
     blocked: false,
     loginCount: input.createdByAdmin ? 0 : 1,
     lastLoginAt: input.createdByAdmin ? null : now,
+    phone: normalizePhone(input.phone),
+    companyWebsite: normalizeWebsite(input.companyWebsite),
     createdAt: now,
   };
 
@@ -467,6 +477,13 @@ export async function listArticlesServer(): Promise<ClientArticle[]> {
   );
 }
 
+export async function listArticlesByUserServer(
+  userId: string,
+): Promise<ClientArticle[]> {
+  const articles = await listArticlesServer();
+  return articles.filter((article) => article.userId === userId);
+}
+
 export async function createArticleServer(
   input: Omit<
     ClientArticle,
@@ -539,6 +556,8 @@ export function publicSessionFromUser(
       email: user.email,
       createdAt: user.createdAt,
       role: user.role,
+      phone: user.phone || "",
+      companyWebsite: user.companyWebsite || "",
     },
     credits: user.credits,
     purchasedPacks,

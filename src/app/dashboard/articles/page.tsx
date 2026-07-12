@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { AnnoncesList } from "@/components/articles/annonces-list";
+import { MyArticlesReadonly } from "@/components/articles/my-articles-readonly";
 import { ARTICLES } from "@/lib/data/articles";
 import { buildMetadata } from "@/lib/seo/metadata";
 
@@ -20,10 +21,11 @@ export default function DashboardArticlesPage() {
           Articles SEO & backlinks
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Contenus de référencement (pas des annonces). Après validation admin,
-          chaque article a une page publique et est indexé automatiquement.
+          Contenus de référencement. Les liens publiés sont en lecture seule ;
+          l&apos;admin valide et indexe.
         </p>
       </div>
+      <MyArticlesReadonly />
       <AnnoncesList articles={ARTICLES} />
     </div>
   );

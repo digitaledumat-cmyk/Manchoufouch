@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   consumeCreditServer,
   createArticleServer,
+  listArticlesByUserServer,
   publicSessionFromUser,
   resolveUserFromSession,
 } from "@/lib/auth/server-store";
@@ -11,6 +12,34 @@ import {
   readRequestSession,
   sessionCookieOptions,
 } from "@/lib/auth/session";
+
+export async function GET() {
+  try {
+    const session = await readRequestSession();
+    if (!session) {
+      return NextResponse.json(
+        { error: "Vous devez être connecté." },
+        { status: 401 },
+      );
+    }
+
+    const articles = await listArticlesByUserServer(session.user.id);
+    return NextResponse.json({
+      articles,
+      published: articles.filter(
+        (article) => article.status === "approved" && article.publicPath,
+      ),
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Chargement impossible.",
+      },
+      { status: 400 },
+    );
+  }
+}
 
 export async function POST(request: Request) {
   try {

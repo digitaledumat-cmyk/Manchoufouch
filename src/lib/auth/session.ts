@@ -58,6 +58,8 @@ export function decodeSession(token: string | undefined | null): AuthSession | n
         email: payload.user.email,
         createdAt: payload.user.createdAt,
         role: payload.user.role as UserRole,
+        phone: payload.user.phone || "",
+        companyWebsite: payload.user.companyWebsite || "",
       },
       credits: payload.credits ?? 0,
       purchasedPacks: payload.purchasedPacks ?? [],

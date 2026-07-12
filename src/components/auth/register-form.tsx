@@ -25,6 +25,8 @@ export function RegisterForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [companyWebsite, setCompanyWebsite] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -45,6 +47,8 @@ export function RegisterForm() {
         name,
         email,
         password,
+        phone,
+        companyWebsite,
         captchaToken: captchaToken || undefined,
       });
       router.push("/pricing");
@@ -68,13 +72,13 @@ export function RegisterForm() {
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nom</Label>
+            <Label htmlFor="name">Nom / Société</Label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              placeholder="Votre nom"
+              placeholder="Votre nom ou raison sociale"
             />
           </div>
           <div className="space-y-2">
@@ -86,6 +90,32 @@ export function RegisterForm() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="vous@exemple.com"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">Téléphone</Label>
+            <Input
+              id="phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+212 6XX XXX XXX"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="companyWebsite">
+              Site web société{" "}
+              <span className="font-normal text-muted-foreground">
+                (optionnel)
+              </span>
+            </Label>
+            <Input
+              id="companyWebsite"
+              type="url"
+              value={companyWebsite}
+              onChange={(e) => setCompanyWebsite(e.target.value)}
+              placeholder="https://www.exemple.ma"
             />
           </div>
           <div className="space-y-2">

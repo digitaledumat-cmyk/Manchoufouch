@@ -13,6 +13,8 @@ export async function POST(request: Request) {
       name?: string;
       email?: string;
       password?: string;
+      phone?: string;
+      companyWebsite?: string;
       captchaToken?: string;
     };
 
@@ -25,6 +27,8 @@ export async function POST(request: Request) {
       name: body.name || "",
       email: body.email || "",
       password: body.password || "",
+      phone: body.phone,
+      companyWebsite: body.companyWebsite,
     });
 
     const session = publicSessionFromUser(user);

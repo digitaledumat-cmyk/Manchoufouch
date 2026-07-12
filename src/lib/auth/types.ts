@@ -6,6 +6,8 @@ export type AuthUser = {
   email: string;
   createdAt: string;
   role: UserRole;
+  phone?: string;
+  companyWebsite?: string;
 };
 
 export type AuthSession = {
@@ -69,3 +71,14 @@ export type AdminDashboardStats = {
   totalLogins: number;
   pendingArticles: number;
 };
+
+export function normalizeWebsite(raw?: string | null) {
+  const value = (raw || "").trim();
+  if (!value) return "";
+  if (value.startsWith("http://") || value.startsWith("https://")) return value;
+  return `https://${value}`;
+}
+
+export function normalizePhone(raw?: string | null) {
+  return (raw || "").trim().replace(/\s+/g, " ");
+}

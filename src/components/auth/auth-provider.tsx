@@ -19,6 +19,8 @@ type AuthContextValue = {
     name: string;
     email: string;
     password: string;
+    phone?: string;
+    companyWebsite?: string;
     captchaToken?: string;
   }) => Promise<void>;
   login: (input: {
@@ -71,6 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       name: string;
       email: string;
       password: string;
+      phone?: string;
+      companyWebsite?: string;
       captchaToken?: string;
     }) => {
       const response = await fetch("/api/auth/register", {

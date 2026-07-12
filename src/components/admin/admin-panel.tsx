@@ -6,6 +6,7 @@ import {
   Ban,
   Check,
   Coins,
+  ExternalLink,
   KeyRound,
   Loader2,
   Pencil,
@@ -37,6 +38,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import type {
   AdminDashboardStats,
@@ -90,7 +99,10 @@ export function AdminPanel() {
     email: "",
     password: "",
     credits: "0",
+    phone: "",
+    companyWebsite: "",
   });
+  const [clientSearch, setClientSearch] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("pending");
@@ -147,6 +159,31 @@ export function AdminPanel() {
     if (statusFilter === "all") return articles;
     return articles.filter((article) => article.status === statusFilter);
   }, [articles, statusFilter]);
+
+  const filteredClients = useMemo(() => {
+    const q = clientSearch.trim().toLowerCase();
+    if (!q) return clients;
+    return clients.filter((client) => {
+      const hay = [
+        client.name,
+        client.email,
+        client.phone || "",
+        client.companyWebsite || "",
+      ]
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [clients, clientSearch]);
+
+  function articlesForClient(userId: string) {
+    return articles.filter(
+      (article) =>
+        article.userId === userId &&
+        article.status === "approved" &&
+        article.publicPath,
+    );
+  }
 
   if (!ready) {
     return (
@@ -213,21 +250,32 @@ export function AdminPanel() {
           email: createForm.email,
           password: createForm.password,
           credits: Number(createForm.credits) || 0,
+          phone: createForm.phone,
+          companyWebsite: createForm.companyWebsite,
         }),
       });
       const data = await parseJson<{
         message?: string;
         clients: ClientPublicUser[];
         stats: AdminDashboardStats;
+        articles?: ClientArticle[];
       }>(response);
       setClients(data.clients);
       setStats(data.stats);
+      if (data.articles) setArticles(data.articles);
       setCreditDrafts(
         Object.fromEntries(
           data.clients.map((client) => [client.id, String(client.credits)]),
         ),
       );
-      setCreateForm({ name: "", email: "", password: "", credits: "0" });
+      setCreateForm({
+        name: "",
+        email: "",
+        password: "",
+        credits: "0",
+        phone: "",
+        companyWebsite: "",
+      });
       setMessage(data.message || "Compte client créé.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Création impossible.");
@@ -652,6 +700,42 @@ export function AdminPanel() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="create-phone">Téléphone</Label>
+              <Input
+                id="create-phone"
+                type="tel"
+                value={createForm.phone}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    phone: e.target.value,
+                  }))
+                }
+                placeholder="+212 6XX XXX XXX"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-website">
+                Site web société{" "}
+                <span className="font-normal text-muted-foreground">
+                  (optionnel)
+                </span>
+              </Label>
+              <Input
+                id="create-website"
+                type="url"
+                value={createForm.companyWebsite}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    companyWebsite: e.target.value,
+                  }))
+                }
+                placeholder="https://www.exemple.ma"
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="create-credits">Crédits initiaux</Label>
               <Input
                 id="create-credits"
@@ -755,138 +839,208 @@ export function AdminPanel() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>
-            Comptes clients ({clients.length})
-          </CardTitle>
-          <CardDescription>
-            Tous les comptes inscrits (partagés serveur — visibles ici dès
-            création).
-          </CardDescription>
+        <CardHeader className="gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <CardTitle>Liste des clients ({clients.length})</CardTitle>
+            <CardDescription>
+              Toutes les infos compte + liens articles publiés (lecture seule).
+            </CardDescription>
+          </div>
+          <Input
+            className="max-w-sm"
+            placeholder="Rechercher nom, e-mail, tél, site…"
+            value={clientSearch}
+            onChange={(e) => setClientSearch(e.target.value)}
+          />
         </CardHeader>
         <CardContent className="space-y-4">
           {clients.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Aucun client inscrit pour le moment. Créez un compte ci-dessus ou
-              demandez au client de s&apos;inscrire sur /auth/register.
+              Aucun client inscrit pour le moment.
+            </p>
+          ) : filteredClients.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Aucun client ne correspond à « {clientSearch} ».
             </p>
           ) : (
-            clients.map((client) => (
-              <div
-                key={client.id}
-                className="space-y-4 rounded-xl border p-4"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium">{client.name}</p>
-                    <p className="text-sm text-muted-foreground">{client.email}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Inscrit le {formatDate(client.createdAt)} ·{" "}
-                      {client.loginCount} connexion
-                      {client.loginCount > 1 ? "s" : ""} · Dernière :{" "}
-                      {formatDate(client.lastLoginAt)}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant={client.blocked ? "destructive" : "secondary"}>
-                      {client.blocked ? "Bloqué" : "Actif"}
-                    </Badge>
-                    <Badge variant="outline">
-                      {client.credits} crédit{client.credits > 1 ? "s" : ""}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor={`credits-${client.id}`}>Crédits</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id={`credits-${client.id}`}
-                        type="number"
-                        min={0}
-                        value={creditDrafts[client.id] ?? "0"}
-                        onChange={(event) =>
-                          setCreditDrafts((prev) => ({
-                            ...prev,
-                            [client.id]: event.target.value,
-                          }))
-                        }
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => handleSetCredits(client.id)}
-                      >
-                        Sauver
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {[5, 10, 20].map((amount) => (
-                        <Button
-                          key={amount}
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleAddCredits(client.id, amount)}
-                        >
-                          <Coins className="size-3.5" />+{amount}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor={`password-${client.id}`}>
-                      Réinitialiser mot de passe
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id={`password-${client.id}`}
-                        type="text"
-                        placeholder="Nouveau mot de passe"
-                        value={passwordDrafts[client.id] ?? ""}
-                        onChange={(event) =>
-                          setPasswordDrafts((prev) => ({
-                            ...prev,
-                            [client.id]: event.target.value,
-                          }))
-                        }
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => handleResetPassword(client.id)}
-                      >
-                        <KeyRound className="size-4" />
-                        Reset
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={client.blocked ? "secondary" : "outline"}
-                    onClick={() => handleToggleBlock(client)}
-                  >
-                    <Ban className="size-4" />
-                    {client.blocked ? "Débloquer" : "Bloquer"}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleDeleteClient(client.id)}
-                  >
-                    <Trash2 className="size-4" />
-                    Supprimer
-                  </Button>
-                </div>
-              </div>
-            ))
+            <div className="overflow-x-auto rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Site web</TableHead>
+                    <TableHead>Crédits</TableHead>
+                    <TableHead>Activité</TableHead>
+                    <TableHead>Articles publiés</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredClients.map((client) => {
+                    const published = articlesForClient(client.id);
+                    return (
+                      <TableRow key={client.id}>
+                        <TableCell className="align-top">
+                          <p className="font-medium">{client.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {client.email}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            <Badge
+                              variant={
+                                client.blocked ? "destructive" : "secondary"
+                              }
+                            >
+                              {client.blocked ? "Bloqué" : "Actif"}
+                            </Badge>
+                            <Badge variant="outline">
+                              ID {client.id.slice(0, 8)}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top text-sm">
+                          <p>{client.phone || "—"}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Inscrit {formatDate(client.createdAt)}
+                          </p>
+                        </TableCell>
+                        <TableCell className="align-top text-sm">
+                          {client.companyWebsite ? (
+                            <a
+                              href={client.companyWebsite}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex max-w-[180px] items-center gap-1 break-all underline underline-offset-4"
+                            >
+                              {client.companyWebsite.replace(/^https?:\/\//, "")}
+                              <ExternalLink className="size-3 shrink-0" />
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex min-w-[140px] gap-2">
+                            <Input
+                              type="number"
+                              min={0}
+                              value={creditDrafts[client.id] ?? "0"}
+                              onChange={(event) =>
+                                setCreditDrafts((prev) => ({
+                                  ...prev,
+                                  [client.id]: event.target.value,
+                                }))
+                              }
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleSetCredits(client.id)}
+                            >
+                              OK
+                            </Button>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {[5, 10, 20].map((amount) => (
+                              <Button
+                                key={amount}
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                onClick={() =>
+                                  handleAddCredits(client.id, amount)
+                                }
+                              >
+                                +{amount}
+                              </Button>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top text-xs text-muted-foreground">
+                          <p>
+                            {client.loginCount} connexion
+                            {client.loginCount > 1 ? "s" : ""}
+                          </p>
+                          <p>Dernière : {formatDate(client.lastLoginAt)}</p>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          {published.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">
+                              Aucun
+                            </span>
+                          ) : (
+                            <ul className="space-y-1">
+                              {published.map((article) => (
+                                <li key={article.id}>
+                                  <a
+                                    href={article.publicPath}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs underline underline-offset-4"
+                                    title={article.title}
+                                  >
+                                    {article.publicPath}
+                                    <ExternalLink className="size-3" />
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex min-w-[180px] flex-col gap-2">
+                            <div className="flex gap-2">
+                              <Input
+                                type="text"
+                                placeholder="Nouveau MDP"
+                                value={passwordDrafts[client.id] ?? ""}
+                                onChange={(event) =>
+                                  setPasswordDrafts((prev) => ({
+                                    ...prev,
+                                    [client.id]: event.target.value,
+                                  }))
+                                }
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleResetPassword(client.id)}
+                              >
+                                <KeyRound className="size-4" />
+                              </Button>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={
+                                  client.blocked ? "secondary" : "outline"
+                                }
+                                onClick={() => handleToggleBlock(client)}
+                              >
+                                <Ban className="size-4" />
+                                {client.blocked ? "Débloquer" : "Bloquer"}
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDeleteClient(client.id)}
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
