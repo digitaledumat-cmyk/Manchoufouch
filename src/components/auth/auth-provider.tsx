@@ -9,17 +9,7 @@ import {
   useState,
 } from "react";
 
-import {
-  addCreditsToUser,
-  consumeCredit,
-  ensureAdminSeed,
-  loginUser,
-  readSession,
-  registerUser,
-  writeSession,
-  type AuthSession,
-} from "@/lib/auth/storage";
-import { getCreditPackById } from "@/lib/data/pricing";
+import type { AuthSession } from "@/lib/auth/types";
 
 type AuthContextValue = {
   session: AuthSession | null;
@@ -34,77 +24,99 @@ type AuthContextValue = {
   logout: () => void;
   buyPack: (packId: string) => Promise<void>;
   useCredit: () => Promise<AuthSession>;
-  refreshSession: () => void;
+  refreshSession: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+async function parseJson<T>(response: Response): Promise<T> {
+  const data = (await response.json()) as T & { error?: string };
+  if (!response.ok) {
+    throw new Error(
+      typeof data.error === "string" ? data.error : "Requête impossible.",
+    );
+  }
+  return data;
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    ensureAdminSeed();
-    setSession(readSession());
-    setReady(true);
+  const refreshSession = useCallback(async () => {
+    const response = await fetch("/api/auth/me", { credentials: "include" });
+    const data = await parseJson<{ session: AuthSession | null }>(response);
+    setSession(data.session);
   }, []);
 
-  const refreshSession = useCallback(() => {
-    setSession(readSession());
-  }, []);
+  useEffect(() => {
+    void (async () => {
+      try {
+        await refreshSession();
+      } catch {
+        setSession(null);
+      } finally {
+        setReady(true);
+      }
+    })();
+  }, [refreshSession]);
 
   const register = useCallback(
     async (input: { name: string; email: string; password: string }) => {
-      const next = registerUser(input);
-      setSession(next);
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      const data = await parseJson<{ session: AuthSession }>(response);
+      setSession(data.session);
     },
     [],
   );
 
   const login = useCallback(
     async (input: { email: string; password: string }) => {
-      const next = loginUser(input);
-      setSession(next);
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      const data = await parseJson<{ session: AuthSession }>(response);
+      setSession(data.session);
     },
     [],
   );
 
   const logout = useCallback(() => {
-    writeSession(null);
-    setSession(null);
+    void fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    }).finally(() => setSession(null));
   }, []);
 
   const buyPack = useCallback(async (packId: string) => {
-    const pack = getCreditPackById(packId);
-    const current = readSession();
-    if (!pack) throw new Error("Pack introuvable.");
-    if (!current) throw new Error("Créez un compte avant d'acheter des crédits.");
-
-    const next = addCreditsToUser(current.user.id, pack.articles);
-    if (!next) throw new Error("Impossible d'ajouter les crédits.");
-
-    const withHistory: AuthSession = {
-      ...next,
-      purchasedPacks: [
-        ...next.purchasedPacks,
-        {
-          packId: pack.id,
-          articles: pack.articles,
-          at: new Date().toISOString(),
-        },
-      ],
-    };
-    writeSession(withHistory);
-    setSession(withHistory);
+    const response = await fetch("/api/auth/buy-pack", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ packId }),
+    });
+    const data = await parseJson<{ session: AuthSession }>(response);
+    setSession(data.session);
   }, []);
 
   const useCredit = useCallback(async () => {
-    const current = readSession();
-    if (!current) throw new Error("Vous devez être connecté.");
-    const next = consumeCredit(current.user.id);
-    setSession(next);
-    return next;
-  }, []);
+    // Credits are consumed server-side when publishing an article.
+    // Kept for compatibility with older call sites.
+    await refreshSession();
+    const response = await fetch("/api/auth/me", { credentials: "include" });
+    const data = await parseJson<{ session: AuthSession | null }>(response);
+    if (!data.session) throw new Error("Vous devez être connecté.");
+    setSession(data.session);
+    return data.session;
+  }, [refreshSession]);
 
   const value = useMemo(
     () => ({

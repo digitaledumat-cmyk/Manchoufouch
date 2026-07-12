@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Ban,
   Check,
@@ -9,6 +9,7 @@ import {
   KeyRound,
   Loader2,
   Pencil,
+  RefreshCw,
   Shield,
   Trash2,
   UserCheck,
@@ -37,22 +38,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  DEFAULT_ADMIN,
-  deleteClientArticle,
-  deleteClientUser,
-  getAdminDashboardStats,
-  listClients,
-  readClientArticles,
-  resetClientPassword,
-  setClientBlocked,
-  setCreditsForUser,
-  updateClientArticle,
-  type AdminDashboardStats,
-  type ClientArticle,
-  type ClientArticleStatus,
-  type ClientPublicUser,
-} from "@/lib/auth/storage";
+import type {
+  AdminDashboardStats,
+  ClientArticle,
+  ClientArticleStatus,
+  ClientPublicUser,
+} from "@/lib/auth/types";
 import { cn } from "@/lib/utils";
 
 const STATUS_LABEL: Record<ClientArticleStatus, string> = {
@@ -65,6 +56,16 @@ const STATUS_LABEL: Record<ClientArticleStatus, string> = {
 function formatDate(value: string | null) {
   if (!value) return "Jamais";
   return new Date(value).toLocaleString("fr-FR");
+}
+
+async function parseJson<T>(response: Response): Promise<T> {
+  const data = (await response.json()) as T & { error?: string };
+  if (!response.ok) {
+    throw new Error(
+      typeof data.error === "string" ? data.error : "Requête impossible.",
+    );
+  }
+  return data;
 }
 
 export function AdminPanel() {
@@ -84,27 +85,58 @@ export function AdminPanel() {
     backlinks: "",
     adminNote: "",
   });
+  const [createForm, setCreateForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    credits: "0",
+  });
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("pending");
+  const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
 
-  function refresh() {
-    const nextClients = listClients();
-    setClients(nextClients);
-    setCreditDrafts(
-      Object.fromEntries(
-        nextClients.map((client) => [client.id, String(client.credits)]),
-      ),
-    );
-    setArticles(readClientArticles());
-    setStats(getAdminDashboardStats());
-  }
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [clientsRes, articlesRes] = await Promise.all([
+        fetch("/api/admin/clients", { credentials: "include" }),
+        fetch("/api/admin/articles", { credentials: "include" }),
+      ]);
+      const clientsData = await parseJson<{
+        clients: ClientPublicUser[];
+        stats: AdminDashboardStats;
+      }>(clientsRes);
+      const articlesData = await parseJson<{
+        articles: ClientArticle[];
+        stats: AdminDashboardStats;
+      }>(articlesRes);
+
+      setClients(clientsData.clients);
+      setStats(articlesData.stats ?? clientsData.stats);
+      setCreditDrafts(
+        Object.fromEntries(
+          clientsData.clients.map((client) => [
+            client.id,
+            String(client.credits),
+          ]),
+        ),
+      );
+      setArticles(articlesData.articles);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Chargement impossible.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (ready && session?.user.role === "admin") {
-      refresh();
+      void refresh();
     }
-  }, [ready, session]);
+  }, [ready, session, refresh]);
 
   const pendingArticles = useMemo(
     () => articles.filter((article) => article.status === "pending"),
@@ -138,11 +170,9 @@ export function AdminPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <p>
-            Email : <strong>{DEFAULT_ADMIN.email}</strong>
-          </p>
-          <p>
-            Mot de passe : <strong>{DEFAULT_ADMIN.password}</strong>
+          <p className="text-muted-foreground">
+            Connectez-vous avec votre compte administrateur pour accéder au
+            panel.
           </p>
           <Link
             href="/auth/login?next=/admin"
@@ -168,7 +198,45 @@ export function AdminPanel() {
     );
   }
 
-  function handleSetCredits(userId: string) {
+  async function handleCreateClient(event: React.FormEvent) {
+    event.preventDefault();
+    setError(null);
+    setMessage(null);
+    setCreating(true);
+    try {
+      const response = await fetch("/api/admin/clients", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: createForm.name,
+          email: createForm.email,
+          password: createForm.password,
+          credits: Number(createForm.credits) || 0,
+        }),
+      });
+      const data = await parseJson<{
+        message?: string;
+        clients: ClientPublicUser[];
+        stats: AdminDashboardStats;
+      }>(response);
+      setClients(data.clients);
+      setStats(data.stats);
+      setCreditDrafts(
+        Object.fromEntries(
+          data.clients.map((client) => [client.id, String(client.credits)]),
+        ),
+      );
+      setCreateForm({ name: "", email: "", password: "", credits: "0" });
+      setMessage(data.message || "Compte client créé.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Création impossible.");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleSetCredits(userId: string) {
     setError(null);
     setMessage(null);
     const value = Number(creditDrafts[userId] ?? 0);
@@ -176,19 +244,52 @@ export function AdminPanel() {
       setError("Nombre de crédits invalide.");
       return;
     }
-    setCreditsForUser(userId, value);
-    setMessage("Crédits mis à jour.");
-    refresh();
+    try {
+      const response = await fetch(`/api/admin/clients/${userId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credits: value }),
+      });
+      const data = await parseJson<{
+        clients: ClientPublicUser[];
+        stats: AdminDashboardStats;
+      }>(response);
+      setClients(data.clients);
+      setStats(data.stats);
+      setMessage("Crédits mis à jour.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Mise à jour impossible.");
+    }
   }
 
-  function handleAddCredits(userId: string, amount: number) {
-    const current = Number(creditDrafts[userId] ?? 0);
-    setCreditsForUser(userId, current + amount);
-    setMessage(`+${amount} crédits ajoutés.`);
-    refresh();
+  async function handleAddCredits(userId: string, amount: number) {
+    setError(null);
+    try {
+      const response = await fetch(`/api/admin/clients/${userId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ addCredits: amount }),
+      });
+      const data = await parseJson<{
+        clients: ClientPublicUser[];
+        stats: AdminDashboardStats;
+      }>(response);
+      setClients(data.clients);
+      setStats(data.stats);
+      setCreditDrafts(
+        Object.fromEntries(
+          data.clients.map((client) => [client.id, String(client.credits)]),
+        ),
+      );
+      setMessage(`+${amount} crédits ajoutés.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Mise à jour impossible.");
+    }
   }
 
-  function handleResetPassword(userId: string) {
+  async function handleResetPassword(userId: string) {
     setError(null);
     setMessage(null);
     const nextPassword = passwordDrafts[userId]?.trim();
@@ -197,16 +298,24 @@ export function AdminPanel() {
       return;
     }
     try {
-      resetClientPassword(userId, nextPassword);
+      await parseJson(
+        await fetch(`/api/admin/clients/${userId}`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: nextPassword }),
+        }),
+      );
       setPasswordDrafts((prev) => ({ ...prev, [userId]: "" }));
       setMessage(`Mot de passe réinitialisé : ${nextPassword}`);
-      refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Réinitialisation impossible.");
+      setError(
+        err instanceof Error ? err.message : "Réinitialisation impossible.",
+      );
     }
   }
 
-  function handleToggleBlock(client: ClientPublicUser) {
+  async function handleToggleBlock(client: ClientPublicUser) {
     const next = !client.blocked;
     if (
       !window.confirm(
@@ -217,16 +326,42 @@ export function AdminPanel() {
     ) {
       return;
     }
-    setClientBlocked(client.id, next);
-    setMessage(next ? "Compte bloqué." : "Compte débloqué.");
-    refresh();
+    try {
+      const response = await fetch(`/api/admin/clients/${client.id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blocked: next }),
+      });
+      const data = await parseJson<{
+        clients: ClientPublicUser[];
+        stats: AdminDashboardStats;
+      }>(response);
+      setClients(data.clients);
+      setStats(data.stats);
+      setMessage(next ? "Compte bloqué." : "Compte débloqué.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Action impossible.");
+    }
   }
 
-  function handleDeleteClient(userId: string) {
+  async function handleDeleteClient(userId: string) {
     if (!window.confirm("Supprimer ce client et ses articles ?")) return;
-    deleteClientUser(userId);
-    setMessage("Client supprimé.");
-    refresh();
+    try {
+      const response = await fetch(`/api/admin/clients/${userId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await parseJson<{
+        clients: ClientPublicUser[];
+        stats: AdminDashboardStats;
+      }>(response);
+      setClients(data.clients);
+      setStats(data.stats);
+      setMessage("Client supprimé.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Suppression impossible.");
+    }
   }
 
   function startEdit(article: ClientArticle) {
@@ -240,94 +375,138 @@ export function AdminPanel() {
     });
   }
 
-  function saveCorrection() {
+  async function saveCorrection() {
     if (!editingId) return;
-    updateClientArticle(editingId, {
-      title: editForm.title,
-      metaDescription: editForm.metaDescription,
-      content: editForm.content,
-      backlinks: editForm.backlinks,
-      adminNote: editForm.adminNote,
-      status: "needs_correction",
-    });
-    setEditingId(null);
-    setMessage("Article corrigé et marqué « à corriger ».");
-    refresh();
+    try {
+      const response = await fetch(`/api/admin/articles/${editingId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editForm.title,
+          metaDescription: editForm.metaDescription,
+          content: editForm.content,
+          backlinks: editForm.backlinks,
+          adminNote: editForm.adminNote,
+          status: "needs_correction",
+        }),
+      });
+      const data = await parseJson<{
+        articles: ClientArticle[];
+        stats: AdminDashboardStats;
+      }>(response);
+      setArticles(data.articles);
+      setStats(data.stats);
+      setEditingId(null);
+      setMessage("Article corrigé et marqué « à corriger ».");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Enregistrement impossible.");
+    }
   }
 
   async function setArticleStatus(id: string, status: ClientArticleStatus) {
-    const updated = updateClientArticle(id, { status });
+    try {
+      const response = await fetch(`/api/admin/articles/${id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const data = await parseJson<{
+        article: ClientArticle;
+        articles: ClientArticle[];
+        stats: AdminDashboardStats;
+      }>(response);
+      setArticles(data.articles);
+      setStats(data.stats);
 
-    if (status === "approved") {
-      try {
-        const response = await fetch("/api/seo/publish", {
+      if (status === "approved") {
+        try {
+          const publishRes = await fetch("/api/seo/publish", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "publish",
+              article: {
+                id: data.article.id,
+                title: data.article.title,
+                domain: data.article.domain,
+                metaDescription: data.article.metaDescription,
+                keywords: data.article.keywords,
+                h1: data.article.h1,
+                content: data.article.content,
+                userName: data.article.userName,
+                targetUrl: data.article.targetUrl,
+              },
+            }),
+          });
+          const publishData = (await publishRes.json()) as {
+            publicPath?: string;
+            error?: string;
+          };
+          if (!publishRes.ok) {
+            throw new Error(publishData.error || "Indexation échouée.");
+          }
+          setMessage(
+            `Article validé et soumis à l'indexation Google${
+              publishData.publicPath ? ` → ${publishData.publicPath}` : ""
+            }.`,
+          );
+        } catch (err) {
+          setMessage(
+            `Article validé, mais indexation Google : ${
+              err instanceof Error ? err.message : "erreur"
+            }.`,
+          );
+        }
+        return;
+      }
+
+      if (status === "rejected") {
+        void fetch("/api/seo/publish", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "publish",
-            article: {
-              id: updated.id,
-              title: updated.title,
-              domain: updated.domain,
-              metaDescription: updated.metaDescription,
-              keywords: updated.keywords,
-              h1: updated.h1,
-              content: updated.content,
-              userName: updated.userName,
-              targetUrl: updated.targetUrl,
-            },
-          }),
+          body: JSON.stringify({ action: "unpublish", id }),
         });
-        const data = (await response.json()) as {
-          publicPath?: string;
-          indexing?: { indexNow?: { ok: boolean }; googlePing?: { ok: boolean } };
-          error?: string;
-        };
-        if (!response.ok) {
-          throw new Error(data.error || "Indexation échouée.");
-        }
-        setMessage(
-          `Article validé et soumis à l'indexation Google${
-            data.publicPath ? ` → ${data.publicPath}` : ""
-          }.`,
-        );
-      } catch (err) {
-        setMessage(
-          `Article validé localement, mais indexation Google : ${
-            err instanceof Error ? err.message : "erreur"
-          }.`,
-        );
       }
-      refresh();
-      return;
-    }
 
-    if (status === "rejected") {
+      setMessage(`Statut mis à jour : ${STATUS_LABEL[status]}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Mise à jour impossible.");
+    }
+  }
+
+  async function handleDeleteArticle(id: string) {
+    if (!window.confirm("Supprimer définitivement cet article ?")) return;
+    try {
+      const response = await fetch(`/api/admin/articles/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await parseJson<{
+        articles: ClientArticle[];
+        stats: AdminDashboardStats;
+      }>(response);
+      setArticles(data.articles);
+      setStats(data.stats);
       void fetch("/api/seo/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "unpublish", id }),
       });
+      if (editingId === id) setEditingId(null);
+      setMessage("Article supprimé.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Suppression impossible.");
     }
-
-    setMessage(`Statut mis à jour : ${STATUS_LABEL[status]}.`);
-    refresh();
-  }
-
-  async function handleDeleteArticle(id: string) {
-    if (!window.confirm("Supprimer définitivement cet article ?")) return;
-    deleteClientArticle(id);
-    void fetch("/api/seo/publish", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "unpublish", id }),
-    });
-    if (editingId === id) setEditingId(null);
-    setMessage("Article supprimé.");
-    refresh();
   }
 
   const scoreCards = [
+    {
+      label: "Clients",
+      value: stats?.totalClients ?? clients.length,
+      icon: Users,
+    },
     {
       label: "Nouveaux (7j)",
       value: stats?.newUsers ?? 0,
@@ -344,36 +523,53 @@ export function AdminPanel() {
       icon: Coins,
     },
     {
-      label: "Sans crédits",
-      value: stats?.withoutCredits ?? 0,
-      icon: Users,
-    },
-    {
       label: "Connexions totales",
       value: stats?.totalLogins ?? 0,
       icon: Shield,
     },
     {
       label: "Articles en attente",
-      value: stats?.pendingArticles ?? 0,
+      value: stats?.pendingArticles ?? pendingArticles.length,
       icon: Pencil,
     },
   ];
 
   return (
     <div className="space-y-8">
-      <div className="rounded-xl border bg-muted/40 px-4 py-3 text-sm">
-        Connecté en admin : <strong>{session.user.name}</strong> (
-        {session.user.email})
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/40 px-4 py-3 text-sm">
+        <p>
+          Connecté en admin : <strong>{session.user.name}</strong> (
+          {session.user.email})
+        </p>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => void refresh()}
+          disabled={loading}
+        >
+          {loading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <RefreshCw className="size-4" />
+          )}
+          Actualiser
+        </Button>
       </div>
 
       {message ? (
-        <p className="text-sm text-emerald-700" role="status">
+        <p
+          className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          role="status"
+        >
           {message}
         </p>
       ) : null}
       {error ? (
-        <p className="text-sm text-destructive" role="alert">
+        <p
+          className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
@@ -394,6 +590,89 @@ export function AdminPanel() {
           </div>
         ))}
       </section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="size-5" />
+            Créer un compte client
+          </CardTitle>
+          <CardDescription>
+            Le compte apparaît immédiatement dans la liste ci-dessous.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            onSubmit={handleCreateClient}
+            className="grid gap-4 md:grid-cols-2"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="create-name">Nom</Label>
+              <Input
+                id="create-name"
+                value={createForm.name}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({ ...prev, name: e.target.value }))
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-email">E-mail</Label>
+              <Input
+                id="create-email"
+                type="email"
+                value={createForm.email}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({ ...prev, email: e.target.value }))
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-password">Mot de passe</Label>
+              <Input
+                id="create-password"
+                type="text"
+                minLength={6}
+                value={createForm.password}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    password: e.target.value,
+                  }))
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-credits">Crédits initiaux</Label>
+              <Input
+                id="create-credits"
+                type="number"
+                min={0}
+                value={createForm.credits}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    credits: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Button type="submit" disabled={creating}>
+                {creating ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <UserPlus className="size-4" />
+                )}
+                Créer le compte
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -470,15 +749,19 @@ export function AdminPanel() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Comptes clients</CardTitle>
+          <CardTitle>
+            Comptes clients ({clients.length})
+          </CardTitle>
           <CardDescription>
-            Crédits, connexions, dernière connexion, reset MDP et blocage.
+            Tous les comptes inscrits (partagés serveur — visibles ici dès
+            création).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {clients.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Aucun client inscrit pour le moment.
+              Aucun client inscrit pour le moment. Créez un compte ci-dessus ou
+              demandez au client de s&apos;inscrire sur /auth/register.
             </p>
           ) : (
             clients.map((client) => (
@@ -720,7 +1003,7 @@ export function AdminPanel() {
                       />
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Button type="button" onClick={saveCorrection}>
+                      <Button type="button" onClick={() => void saveCorrection()}>
                         Enregistrer la correction
                       </Button>
                       <Button

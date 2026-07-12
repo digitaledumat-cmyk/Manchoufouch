@@ -39,12 +39,11 @@ import {
 } from "@/lib/ai/simulate-article";
 import { type SeoBrief } from "@/lib/ai/simulate-seo";
 import { stripMarkdownHashes } from "@/lib/ai/strip-markdown-hashes";
-import { createClientArticle } from "@/lib/auth/storage";
 import { DOMAINS } from "@/lib/data/domains";
 import { cn } from "@/lib/utils";
 
 export function CreateArticleForm() {
-  const { session, ready, useCredit } = useAuth();
+  const { session, ready, refreshSession } = useAuth();
   const [domain, setDomain] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [targetUrl, setTargetUrl] = useState("");
@@ -256,32 +255,44 @@ export function CreateArticleForm() {
     setSuccess(null);
     setIsPublishing(true);
     try {
-      const next = await useCredit();
-      createClientArticle({
-        userId: session.user.id,
-        userName: session.user.name,
-        userEmail: session.user.email,
-        title: stripMarkdownHashes(title.trim()),
-        domain: domain ?? articleModel ?? "referencement",
-        targetUrl,
-        backlinks: "",
-        metaDescription:
-          brief?.metaDescription ||
-          articleBody.slice(0, 155).replace(/\n/g, " "),
-        keywords: brief?.keywords ?? ["SEO Maroc", "référencement Google"],
-        h1: stripMarkdownHashes(brief?.headings.h1 || title.trim()),
-        content: stripMarkdownHashes(
-          articleBody.trim() ||
-            [
-              `H1: ${brief?.headings.h1}`,
-              `H2: ${brief?.headings.h2.join(" | ")}`,
-              `H3: ${brief?.headings.h3.join(" | ")}`,
-              brief?.metaDescription,
-            ].join("\n"),
-        ),
+      const response = await fetch("/api/articles", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: stripMarkdownHashes(title.trim()),
+          domain: domain ?? articleModel ?? "referencement",
+          targetUrl,
+          backlinks: "",
+          metaDescription:
+            brief?.metaDescription ||
+            articleBody.slice(0, 155).replace(/\n/g, " "),
+          keywords: brief?.keywords ?? ["SEO Maroc", "référencement Google"],
+          h1: stripMarkdownHashes(brief?.headings.h1 || title.trim()),
+          content: stripMarkdownHashes(
+            articleBody.trim() ||
+              [
+                `H1: ${brief?.headings.h1}`,
+                `H2: ${brief?.headings.h2.join(" | ")}`,
+                `H3: ${brief?.headings.h3.join(" | ")}`,
+                brief?.metaDescription,
+              ].join("\n"),
+          ),
+        }),
       });
+      const data = (await response.json()) as {
+        error?: string;
+        message?: string;
+        session?: { credits: number };
+      };
+      if (!response.ok) {
+        throw new Error(data.error || "Publication impossible.");
+      }
+      if (data.session) {
+        await refreshSession();
+      }
       setSuccess(
-        `Article « ${title} » soumis pour validation admin. Après validation : indexation Google automatique. 1 crédit utilisé (${next.credits} restant(s)).`,
+        `${data.message || `Article « ${title} » soumis pour validation admin.`} Après validation : indexation Google automatique. 1 crédit utilisé (${data.session?.credits ?? "?"} restant(s)).`,
       );
       setBrief(null);
       setArticleBody("");
