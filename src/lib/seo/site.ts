@@ -1,3 +1,34 @@
+const PRODUCTION_SITE_URL = "https://manchoufouch.ma";
+
+function isLocalhostUrl(url: string) {
+  return /localhost|127\.0\.0\.1/i.test(url);
+}
+
+/** URL canonique du site (jamais localhost en production). */
+function resolveSiteUrl() {
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "") ?? "";
+  const vercelEnv = process.env.VERCEL_ENV; // production | preview | development
+
+  // Production : domaine officiel (ignore localhost s'il a fuité dans les env)
+  if (
+    vercelEnv === "production" ||
+    (process.env.NODE_ENV === "production" && !process.env.VERCEL)
+  ) {
+    if (fromEnv && !isLocalhostUrl(fromEnv)) return fromEnv;
+    return PRODUCTION_SITE_URL;
+  }
+
+  // Preview Vercel
+  if (vercelEnv === "preview" && process.env.VERCEL_URL) {
+    if (fromEnv && !isLocalhostUrl(fromEnv)) return fromEnv;
+    return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
+  }
+
+  // Local / fallback
+  if (fromEnv) return fromEnv;
+  return "http://localhost:3000";
+}
+
 export const SITE_CONFIG = {
   name: "Manchoufouch",
   tagline: "Agence SEO Maroc",
@@ -5,7 +36,7 @@ export const SITE_CONFIG = {
   seoTitle: "Agence SEO Maroc & backlinks",
   description:
     "Référencement Google, backlinks et Ads au Maroc. Manchoufouch booste votre visibilité à Casablanca, Rabat, Marrakech et partout dans le Royaume.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  url: resolveSiteUrl(),
   locale: "fr_MA",
   twitter: "@manchoufouch",
   phone: "+212 661 876 103",
