@@ -58,7 +58,7 @@ export default async function ArticlePublicPage({ params }: PageProps) {
           articleJsonLd(article),
           breadcrumbJsonLd([
             { name: "Accueil", path: "/" },
-            { name: "Annonces", path: "/dashboard/annonces" },
+            { name: "Annonces", path: "/annonces" },
             { name: article.title, path: `/annonces/${article.slug}` },
           ]),
         ]}
@@ -71,6 +71,9 @@ export default async function ArticlePublicPage({ params }: PageProps) {
             {article.type}
           </Badge>
           <Badge>{article.status}</Badge>
+          <span className="rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
+            /annonces/{article.slug}
+          </span>
         </div>
 
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -136,12 +139,18 @@ export default async function ArticlePublicPage({ params }: PageProps) {
           ) : null}
         </section>
 
-        <div className="mt-10">
+        <div className="mt-10 flex flex-wrap gap-3">
           <Link
-            href="/dashboard/annonces"
+            href="/annonces"
             className={cn(buttonVariants({ variant: "outline" }))}
           >
-            Retour aux annonces
+            Tous les articles
+          </Link>
+          <Link
+            href={`/annonces/${article.slug}`}
+            className={cn(buttonVariants({ variant: "secondary" }))}
+          >
+            Lien permanent
           </Link>
         </div>
       </article>

@@ -447,14 +447,17 @@ export function AdminPanel() {
           if (!publishRes.ok) {
             throw new Error(publishData.error || "Indexation échouée.");
           }
+          await refresh();
           setMessage(
-            `Article validé et soumis à l'indexation Google${
-              publishData.publicPath ? ` → ${publishData.publicPath}` : ""
-            }.`,
+            `Page publique créée${
+              publishData.publicPath
+                ? ` : ${publishData.publicPath} (lien unique, pas de doublon)`
+                : ""
+            }. Indexation Google lancée.`,
           );
         } catch (err) {
           setMessage(
-            `Article validé, mais indexation Google : ${
+            `Article validé, mais page / indexation : ${
               err instanceof Error ? err.message : "erreur"
             }.`,
           );
@@ -925,6 +928,19 @@ export function AdminPanel() {
                     <p className="mt-1 text-xs text-muted-foreground">
                       Soumis le {formatDate(article.createdAt)}
                     </p>
+                    {article.publicPath ? (
+                      <p className="mt-2 text-sm">
+                        Page :{" "}
+                        <a
+                          href={article.publicPath}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-medium underline underline-offset-4"
+                        >
+                          {article.publicPath}
+                        </a>
+                      </p>
+                    ) : null}
                   </div>
                   <Badge variant="secondary">
                     {STATUS_LABEL[article.status]}

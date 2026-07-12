@@ -503,6 +503,8 @@ export async function updateArticleServer(
       | "content"
       | "status"
       | "adminNote"
+      | "publicSlug"
+      | "publicPath"
     >
   >,
 ): Promise<ClientArticle> {

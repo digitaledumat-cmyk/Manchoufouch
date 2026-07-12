@@ -8,7 +8,7 @@ const FOOTER_LINKS = {
     { href: "/#services", label: "À propos" },
     { href: "/#services", label: "Nos services" },
     { href: "/#faq", label: "FAQ" },
-    { href: "/dashboard/annonces", label: "Blog / Annonces" },
+    { href: "/annonces", label: "Blog / Annonces" },
   ],
   services: [
     { href: "/auth/register", label: "Créer un compte" },

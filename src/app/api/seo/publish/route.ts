@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
+import { updateArticleServer } from "@/lib/auth/server-store";
 import {
+  publicPathForSlug,
   removePublishedArticle,
   upsertPublishedArticle,
 } from "@/lib/seo/published-store";
@@ -27,6 +29,14 @@ export async function POST(request: Request) {
 
     if (body.action === "unpublish" && body.id) {
       await removePublishedArticle(body.id);
+      try {
+        await updateArticleServer(body.id, {
+          publicSlug: "",
+          publicPath: "",
+        });
+      } catch {
+        // article client may already be deleted
+      }
       return NextResponse.json({ ok: true, unpublished: true });
     }
 
@@ -50,15 +60,30 @@ export async function POST(request: Request) {
       targetUrl: input.targetUrl,
     });
 
+    const publicPath = publicPathForSlug(published.slug);
+
+    try {
+      await updateArticleServer(input.id, {
+        status: "approved",
+        publicSlug: published.slug,
+        publicPath,
+      });
+    } catch {
+      // keep published page even if client record update fails
+    }
+
     const indexing = await requestSearchEngineIndexing([
-      `/annonces/${published.slug}`,
+      publicPath,
+      "/annonces",
       "/sitemap.xml",
     ]);
 
     return NextResponse.json({
       ok: true,
       article: published,
-      publicPath: `/annonces/${published.slug}`,
+      publicPath,
+      publicUrl: publicPath,
+      message: `Page créée : ${publicPath}`,
       indexing,
     });
   } catch (error) {

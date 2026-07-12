@@ -51,6 +51,10 @@ export type ClientArticle = {
   content: string;
   status: ClientArticleStatus;
   adminNote: string;
+  /** Slug public unique (renseigné à la validation admin). */
+  publicSlug?: string;
+  /** Chemin public ex. /annonces/mon-titre */
+  publicPath?: string;
   createdAt: string;
   updatedAt: string;
 };
