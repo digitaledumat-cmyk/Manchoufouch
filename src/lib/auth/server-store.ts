@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
-import { get, put } from "@vercel/blob";
+import { BlobPreconditionFailedError, get, put } from "@vercel/blob";
 
 import {
   DEFAULT_ADMIN,
@@ -22,10 +22,6 @@ const STABLE_ADMIN_ID = "admin-manchoufouch";
 declare global {
   // eslint-disable-next-line no-var
   var __manchoufouchAuthDb: DbShape | undefined;
-  // eslint-disable-next-line no-var
-  var __manchoufouchAuthEtag: string | undefined;
-  // eslint-disable-next-line no-var
-  var __manchoufouchAuthLoad: Promise<DbShape> | undefined;
 }
 
 function dataPaths() {
@@ -82,6 +78,30 @@ function seedAdmin(users: StoredUser[]): StoredUser[] {
   return [...normalized, admin];
 }
 
+function mergeDb(base: DbShape, local: DbShape): DbShape {
+  const users = new Map<string, StoredUser>();
+  for (const user of base.users) {
+    users.set(user.email.toLowerCase(), normalizeUser(user));
+  }
+  // Local mutations win for the same email (credits, block, password, login…).
+  for (const user of local.users) {
+    users.set(user.email.toLowerCase(), normalizeUser(user));
+  }
+
+  const articles = new Map<string, ClientArticle>();
+  for (const article of base.articles) {
+    articles.set(article.id, article);
+  }
+  for (const article of local.articles) {
+    articles.set(article.id, article);
+  }
+
+  return {
+    users: seedAdmin([...users.values()]),
+    articles: [...articles.values()],
+  };
+}
+
 async function streamToText(stream: ReadableStream<Uint8Array> | null) {
   if (!stream) return "";
   return new Response(stream).text();
@@ -113,37 +133,18 @@ async function readFromBlob(): Promise<{ db: DbShape; etag?: string } | null> {
     ) {
       return null;
     }
-    // Store may not exist yet / local without token
-    return null;
+    throw error;
   }
 }
 
-async function writeToBlob(db: DbShape, etag?: string) {
-  if (!hasBlobStore()) return false;
-  try {
-    const result = await put(BLOB_PATH, JSON.stringify(db, null, 2), {
-      access: "private",
-      contentType: "application/json",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      ...(etag ? { ifMatch: etag } : {}),
-    });
-    global.__manchoufouchAuthEtag = result.etag;
-    return true;
-  } catch (error) {
-    // Retry once without ifMatch on conflict
-    if (error instanceof Error && error.name === "BlobPreconditionFailedError") {
-      const result = await put(BLOB_PATH, JSON.stringify(db, null, 2), {
-        access: "private",
-        contentType: "application/json",
-        addRandomSuffix: false,
-        allowOverwrite: true,
-      });
-      global.__manchoufouchAuthEtag = result.etag;
-      return true;
-    }
-    throw error;
-  }
+async function putBlob(db: DbShape) {
+  const result = await put(BLOB_PATH, JSON.stringify(db, null, 2), {
+    access: "private",
+    contentType: "application/json",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+  });
+  return result;
 }
 
 async function readFromDisk(): Promise<DbShape | null> {
@@ -182,16 +183,22 @@ async function writeToDisk(db: DbShape) {
 }
 
 async function loadDbFresh(): Promise<DbShape> {
-  // Prefer durable Blob (shared across all Vercel instances).
-  const fromBlob = await readFromBlob();
-  if (fromBlob) {
-    const db = {
-      users: seedAdmin(fromBlob.db.users),
-      articles: fromBlob.db.articles,
-    };
-    global.__manchoufouchAuthDb = db;
-    global.__manchoufouchAuthEtag = fromBlob.etag;
-    return db;
+  if (hasBlobStore()) {
+    const fromBlob = await readFromBlob();
+    if (fromBlob) {
+      const db = {
+        users: seedAdmin(fromBlob.db.users),
+        articles: fromBlob.db.articles,
+      };
+      global.__manchoufouchAuthDb = db;
+      return db;
+    }
+
+    const empty: DbShape = { users: seedAdmin([]), articles: [] };
+    await putBlob(empty);
+    global.__manchoufouchAuthDb = empty;
+    await writeToDisk(empty).catch(() => undefined);
+    return empty;
   }
 
   const fromDisk = await readFromDisk();
@@ -203,38 +210,58 @@ async function loadDbFresh(): Promise<DbShape> {
     : { users: seedAdmin([]), articles: [] };
 
   global.__manchoufouchAuthDb = db;
-  // Seed durable store when empty so later instances share it.
-  await writeToBlob(db).catch(() => undefined);
   await writeToDisk(db).catch(() => undefined);
   return db;
 }
 
 async function loadDb(): Promise<DbShape> {
-  // Always re-read from Blob in production so every serverless instance sees
-  // the same accounts/credits (avoids "Compte invalide ou bloqué").
+  // Always reload from Blob when configured so all instances share one source.
   if (hasBlobStore()) {
-    if (!global.__manchoufouchAuthLoad) {
-      global.__manchoufouchAuthLoad = loadDbFresh().finally(() => {
-        global.__manchoufouchAuthLoad = undefined;
-      });
-    }
-    return global.__manchoufouchAuthLoad;
+    return loadDbFresh();
   }
-
   if (global.__manchoufouchAuthDb) {
-    global.__manchoufouchAuthDb.users = seedAdmin(global.__manchoufouchAuthDb.users);
+    global.__manchoufouchAuthDb.users = seedAdmin(
+      global.__manchoufouchAuthDb.users,
+    );
     return global.__manchoufouchAuthDb;
   }
   return loadDbFresh();
 }
 
-async function saveDb(db: DbShape) {
-  global.__manchoufouchAuthDb = db;
-  const blobOk = await writeToBlob(db, global.__manchoufouchAuthEtag).catch(
-    () => false,
-  );
-  const diskOk = await writeToDisk(db).catch(() => false);
-  if (!blobOk && !diskOk) {
+async function saveDb(local: DbShape) {
+  if (hasBlobStore()) {
+    // Re-read + merge so concurrent register/login don't wipe each other.
+    let merged = local;
+    try {
+      const latest = await readFromBlob();
+      if (latest) {
+        merged = mergeDb(latest.db, local);
+      }
+    } catch {
+      merged = local;
+    }
+
+    try {
+      await putBlob(merged);
+    } catch (error) {
+      // Rare conflict: merge once more and overwrite.
+      if (error instanceof BlobPreconditionFailedError) {
+        const latest = await readFromBlob();
+        merged = latest ? mergeDb(latest.db, local) : local;
+        await putBlob(merged);
+      } else {
+        throw error;
+      }
+    }
+
+    global.__manchoufouchAuthDb = merged;
+    await writeToDisk(merged).catch(() => undefined);
+    return;
+  }
+
+  global.__manchoufouchAuthDb = local;
+  const diskOk = await writeToDisk(local).catch(() => false);
+  if (!diskOk) {
     throw new Error("Impossible d'enregistrer les comptes sur le serveur.");
   }
 }
