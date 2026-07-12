@@ -27,7 +27,7 @@ export function SiteFooter() {
           <Link href="/" className="inline-flex items-center gap-2">
             <img
               src="/logo-mark.svg"
-              alt=""
+              alt={`Logo ${SITE_CONFIG.name}`}
               width={28}
               height={28}
               className="size-7 rounded-md bg-white"

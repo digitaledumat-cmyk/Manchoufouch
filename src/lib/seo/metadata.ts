@@ -37,7 +37,9 @@ export function buildMetadata({
   const fullTitle =
     title === SITE_CONFIG.name
       ? `${SITE_CONFIG.name} | ${SITE_CONFIG.tagline}`
-      : `${title} | ${SITE_CONFIG.name}`;
+      : title.includes(SITE_CONFIG.name)
+        ? title
+        : `${title} | ${SITE_CONFIG.name}`;
 
   return {
     title: fullTitle,

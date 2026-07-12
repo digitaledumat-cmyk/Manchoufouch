@@ -45,7 +45,7 @@ export function HomeStrategic() {
                   />
                   <CircleMotionImage
                     src={item.secondaryImage}
-                    alt=""
+                    alt={`${item.title} — illustration SEO complémentaire`}
                     size="sm"
                     motion={SECONDARY_MOTIONS[index % SECONDARY_MOTIONS.length]}
                     className={cn(

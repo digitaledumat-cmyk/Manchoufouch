@@ -1,8 +1,10 @@
 export const SITE_CONFIG = {
   name: "Manchoufouch",
-  tagline: "Agence SEO Maroc — référencement Google, backlinks & Trafics organic",
+  tagline: "Agence SEO Maroc",
+  /** Title SEO homepage (sans suffixe marque) — total avec marque ≈ 40–60 car. */
+  seoTitle: "Agence SEO Maroc & backlinks",
   description:
-    "Manchoufouch : référencement naturel au Maroc, backlinks, mots-clés SEO, Google Ads et contenu optimisé pour apparaître en premier sur Google Casablanca, Rabat, Marrakech et partout au Maroc.",
+    "Référencement Google, backlinks et Ads au Maroc. Manchoufouch booste votre visibilité à Casablanca, Rabat, Marrakech et partout dans le Royaume.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   locale: "fr_MA",
   twitter: "@manchoufouch",

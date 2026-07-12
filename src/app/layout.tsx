@@ -24,7 +24,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_CONFIG.url),
   ...buildMetadata({
-    title: "Agence SEO Maroc | Référencement Google, Backlinks & Trafics organic",
+    title: SITE_CONFIG.seoTitle,
     description: SITE_CONFIG.description,
     path: "/",
     keywords: getAllMoroccoSeoKeywords().slice(0, 40),
