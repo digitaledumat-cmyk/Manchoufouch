@@ -9,6 +9,10 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { resolveArticleBySlug } from "@/lib/data/articles";
 import { getDomainLabel } from "@/lib/data/domains";
 import {
+  ArticleBacklinkContent,
+  resolveArticleBacklinkUrl,
+} from "@/lib/seo/article-backlinks";
+import {
   articleJsonLd,
   breadcrumbJsonLd,
 } from "@/lib/seo/json-ld";
@@ -50,6 +54,11 @@ export default async function SeoArticlePage({ params }: PageProps) {
 
   if (!article) notFound();
 
+  const backlinkUrl = resolveArticleBacklinkUrl({
+    targetUrl: article.targetUrl,
+    content: article.content,
+  });
+
   return (
     <>
       <JsonLd
@@ -68,12 +77,9 @@ export default async function SeoArticlePage({ params }: PageProps) {
           <Badge variant="secondary">{getDomainLabel(article.domain)}</Badge>
           <Badge>SEO Backlink</Badge>
           <Badge variant="outline">Article</Badge>
-          <span className="rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
-            /articles/{article.slug}
-          </span>
         </div>
 
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h1 className="text-3xl font-semibold tracking-tight text-[var(--brand-navy)] sm:text-4xl">
           {article.headings.h1}
         </h1>
         <p className="mt-4 text-lg text-muted-foreground">
@@ -96,28 +102,73 @@ export default async function SeoArticlePage({ params }: PageProps) {
 
         <section className="space-y-3">
           <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-            Mots-clés SEO
+            Mots-clés SEO (backlinks)
           </h2>
           <div className="flex flex-wrap gap-2">
-            {article.keywords.map((keyword) => (
-              <Badge key={keyword} variant="secondary">
-                {keyword}
-              </Badge>
-            ))}
+            {article.keywords.map((keyword) =>
+              backlinkUrl ? (
+                <a
+                  key={keyword}
+                  href={backlinkUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex"
+                >
+                  <Badge
+                    variant="secondary"
+                    className="cursor-pointer border border-[var(--brand-coral)]/30 bg-[var(--brand-coral-soft)] text-[var(--brand-navy)] transition hover:border-[var(--brand-coral)]"
+                  >
+                    {keyword}
+                  </Badge>
+                </a>
+              ) : (
+                <Badge key={keyword} variant="secondary">
+                  {keyword}
+                </Badge>
+              ),
+            )}
           </div>
+          {backlinkUrl ? (
+            <p className="text-xs text-muted-foreground">
+              Chaque mot-clé pointe vers{" "}
+              <a
+                href={backlinkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-[var(--brand-coral)] underline underline-offset-2"
+              >
+                {backlinkUrl.replace(/^https?:\/\//, "")}
+              </a>
+            </p>
+          ) : null}
         </section>
 
         <Separator className="my-8" />
 
         <section className="prose prose-neutral max-w-none dark:prose-invert">
-          <div className="whitespace-pre-wrap text-base leading-relaxed text-foreground">
-            {article.content}
-          </div>
+          <ArticleBacklinkContent
+            content={article.content}
+            keywords={article.keywords}
+            targetUrl={article.targetUrl || backlinkUrl}
+          />
 
           {article.headings.h2.length > 0
             ? article.headings.h2.map((h2) => (
                 <div key={h2} className="mt-8">
-                  <h2 className="text-2xl font-semibold tracking-tight">{h2}</h2>
+                  <h2 className="text-2xl font-semibold tracking-tight">
+                    {backlinkUrl ? (
+                      <a
+                        href={backlinkUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[var(--brand-navy)] hover:text-[var(--brand-coral)]"
+                      >
+                        {h2}
+                      </a>
+                    ) : (
+                      h2
+                    )}
+                  </h2>
                 </div>
               ))
             : null}
@@ -129,7 +180,20 @@ export default async function SeoArticlePage({ params }: PageProps) {
               </h3>
               <ul className="mt-3 list-disc space-y-1 pl-5 text-muted-foreground">
                 {article.headings.h3.map((h3) => (
-                  <li key={h3}>{h3}</li>
+                  <li key={h3}>
+                    {backlinkUrl ? (
+                      <a
+                        href={backlinkUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-[var(--brand-coral)]"
+                      >
+                        {h3}
+                      </a>
+                    ) : (
+                      h3
+                    )}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -143,12 +207,23 @@ export default async function SeoArticlePage({ params }: PageProps) {
           >
             Tous les articles SEO
           </Link>
-          <Link
-            href={`/articles/${article.slug}`}
-            className={cn(buttonVariants({ variant: "secondary" }))}
-          >
-            Lien permanent
-          </Link>
+          {backlinkUrl ? (
+            <a
+              href={backlinkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(buttonVariants())}
+            >
+              Site client (backlink)
+            </a>
+          ) : (
+            <Link
+              href={`/articles/${article.slug}`}
+              className={cn(buttonVariants({ variant: "secondary" }))}
+            >
+              Lien permanent
+            </Link>
+          )}
         </div>
       </article>
     </>

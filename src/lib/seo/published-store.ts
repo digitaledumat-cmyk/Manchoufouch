@@ -113,18 +113,41 @@ async function writeToDisk(articles: Article[]) {
 }
 
 export async function readPublishedArticles(): Promise<Article[]> {
+  let articles: Article[] = [];
   if (hasBlobStore()) {
     const fromBlob = await readFromBlob();
-    if (fromBlob) return fromBlob;
-    const fromDisk = await readFromDisk();
-    if (fromDisk.length) {
-      await writeToBlob(fromDisk).catch(() => undefined);
-      return fromDisk;
+    if (fromBlob) articles = fromBlob;
+    else {
+      const fromDisk = await readFromDisk();
+      if (fromDisk.length) {
+        await writeToBlob(fromDisk).catch(() => undefined);
+        articles = fromDisk;
+      } else {
+        await writeToBlob([]).catch(() => undefined);
+        articles = [];
+      }
     }
-    await writeToBlob([]).catch(() => undefined);
-    return [];
+  } else {
+    articles = await readFromDisk();
   }
-  return readFromDisk();
+
+  // Backfill targetUrl depuis le contenu si manquant (anciens articles).
+  let changed = false;
+  const { extractUrlFromContent } = await import("@/lib/seo/article-backlinks");
+  const next = articles.map((article) => {
+    if (article.targetUrl?.trim()) return article;
+    const found = extractUrlFromContent(article.content);
+    if (!found) return article;
+    changed = true;
+    return { ...article, targetUrl: found };
+  });
+
+  if (changed) {
+    await writePublishedArticles(next).catch(() => undefined);
+    return next;
+  }
+
+  return articles;
 }
 
 async function writePublishedArticles(articles: Article[]) {
@@ -203,6 +226,12 @@ export async function upsertPublishedArticle(
     );
   }
 
+  const previous = existingIndex >= 0 ? articles[existingIndex] : null;
+  const targetUrl =
+    input.targetUrl?.trim() ||
+    previous?.targetUrl ||
+    "";
+
   const article: Article = {
     id: input.id,
     slug,
@@ -217,14 +246,14 @@ export async function upsertPublishedArticle(
       : ["SEO Maroc", "backlinks", "référencement Google"],
     headings: {
       h1: input.h1 || input.title,
-      h2: [],
-      h3: [],
+      h2: previous?.headings.h2 ?? [],
+      h3: previous?.headings.h3 ?? [],
     },
     content: input.content,
     author: input.author,
-    publishedAt:
-      existingIndex >= 0 ? articles[existingIndex].publishedAt : now,
+    publishedAt: previous?.publishedAt ?? now,
     updatedAt: now,
+    targetUrl: targetUrl || undefined,
   };
 
   if (existingIndex >= 0) {

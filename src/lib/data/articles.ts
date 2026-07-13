@@ -21,6 +21,8 @@ export type Article = {
   author: string;
   publishedAt: string;
   updatedAt: string;
+  /** URL cible du backlink (site client). */
+  targetUrl?: string;
 };
 
 /** Plus d'articles de démo : uniquement les articles clients publiés. */
