@@ -21,25 +21,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${origin}/articles`,
       lastModified: now,
       changeFrequency: "daily",
-      priority: 0.85,
+      priority: 0.9,
     },
     {
       url: `${origin}/pricing`,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.8,
-    },
-    {
-      url: `${origin}/auth/register`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-    {
-      url: `${origin}/auth/login`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.4,
     },
   ];
 
@@ -54,7 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: `${origin}/articles/${article.slug}`,
     lastModified: new Date(article.updatedAt),
     changeFrequency: "daily" as const,
-    priority: 0.8,
+    priority: 0.85,
   }));
 
   return [...staticRoutes, ...demoArticles, ...clientArticles];

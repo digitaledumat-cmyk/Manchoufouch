@@ -11,6 +11,7 @@ import {
   Loader2,
   Pencil,
   RefreshCw,
+  Search,
   Shield,
   Trash2,
   UserCheck,
@@ -555,6 +556,34 @@ export function AdminPanel() {
     }
   }
 
+  async function handleReindexSite() {
+    setMessage(null);
+    setError(null);
+    try {
+      const response = await fetch("/api/seo/reindex", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const data = await parseJson<{
+        message?: string;
+        indexed?: boolean;
+        indexing?: { urls?: string[] };
+      }>(response);
+      setMessage(
+        data.message ||
+          (data.indexed
+            ? `Indexation automatique lancée (${data.indexing?.urls?.length ?? 0} URL).`
+            : "Indexation demandée."),
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Indexation du site impossible.",
+      );
+    }
+  }
+
   const scoreCards = [
     {
       label: "Clients",
@@ -595,20 +624,36 @@ export function AdminPanel() {
           Connecté en admin : <strong>{session.user.name}</strong> (
           {session.user.email})
         </p>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => void refresh()}
-          disabled={loading}
-        >
-          {loading ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <RefreshCw className="size-4" />
-          )}
-          Actualiser
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void handleReindexSite()}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Search className="size-4" />
+            )}
+            Indexer le site
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void refresh()}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <RefreshCw className="size-4" />
+            )}
+            Actualiser
+          </Button>
+        </div>
       </div>
 
       {message ? (

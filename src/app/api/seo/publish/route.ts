@@ -6,7 +6,10 @@ import {
   removePublishedArticle,
   upsertPublishedArticle,
 } from "@/lib/seo/published-store";
-import { requestSearchEngineIndexing } from "@/lib/seo/request-indexing";
+import {
+  isIndexingSuccessful,
+  requestSearchEngineIndexing,
+} from "@/lib/seo/request-indexing";
 
 export async function POST(request: Request) {
   try {
@@ -75,11 +78,11 @@ export async function POST(request: Request) {
     const indexing = await requestSearchEngineIndexing([
       publicPath,
       "/articles",
+      "/",
       "/sitemap.xml",
     ]);
 
-    const indexingOk =
-      indexing.indexNow.ok || indexing.googlePing.ok || indexing.bingPing.ok;
+    const indexingOk = isIndexingSuccessful(indexing);
 
     return NextResponse.json({
       ok: true,
@@ -87,7 +90,7 @@ export async function POST(request: Request) {
       publicPath,
       publicUrl: publicPath,
       message: indexingOk
-        ? `Article SEO publié : ${publicPath} — indexation lancée automatiquement.`
+        ? `Article SEO publié : ${publicPath} — indexation automatique lancée.`
         : `Article SEO publié : ${publicPath} — page en ligne (indexation à retrayer).`,
       indexing,
       indexed: indexingOk,

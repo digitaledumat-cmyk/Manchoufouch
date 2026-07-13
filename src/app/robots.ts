@@ -4,21 +4,27 @@ import { SITE_CONFIG } from "@/lib/seo/site";
 
 export default function robots(): MetadataRoute.Robots {
   const origin = SITE_CONFIG.url.replace(/\/$/, "");
+  const host = new URL(origin).host;
 
   return {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
-        disallow: ["/dashboard/", "/admin", "/api/"],
+        allow: ["/", "/articles/", "/pricing"],
+        disallow: ["/dashboard/", "/admin", "/api/", "/auth/"],
       },
       {
         userAgent: "Googlebot",
-        allow: "/",
-        disallow: ["/dashboard/", "/admin", "/api/"],
+        allow: ["/", "/articles/", "/pricing"],
+        disallow: ["/dashboard/", "/admin", "/api/", "/auth/"],
+      },
+      {
+        userAgent: "bingbot",
+        allow: ["/", "/articles/", "/pricing"],
+        disallow: ["/dashboard/", "/admin", "/api/", "/auth/"],
       },
     ],
     sitemap: `${origin}/sitemap.xml`,
-    host: origin,
+    host,
   };
 }
