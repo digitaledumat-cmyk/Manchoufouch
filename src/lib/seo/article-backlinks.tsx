@@ -10,27 +10,39 @@ export function normalizeBacklinkUrl(raw?: string | null) {
       : `https://${value}`;
     const url = new URL(withProtocol);
     if (!["http:", "https:"].includes(url.protocol)) return null;
-    return url.toString();
+    // Canonicalise la homepage avec trailing slash
+    if (url.pathname === "" || url.pathname === "/") {
+      return `${url.origin}/`;
+    }
+    return url.toString().replace(/\/$/, "") === `${url.origin}`
+      ? `${url.origin}/`
+      : url.toString();
   } catch {
     return null;
   }
 }
 
-/** Extrait la meilleure URL externe du contenu (fallback backlink). */
-export function extractUrlFromContent(content: string) {
+/** Toutes les URLs externes trouvées dans le contenu. */
+export function extractAllUrlsFromContent(content: string) {
   const matches = content.match(/https?:\/\/[^\s<>"')\]]+/gi) ?? [];
   const normalized = matches
     .map((match) => normalizeBacklinkUrl(match.replace(/[.,;:!?)]+$/, "")))
     .filter((url): url is string => Boolean(url));
 
-  if (!normalized.length) return null;
+  return [...new Set(normalized)];
+}
 
-  // Préfère l'URL la plus spécifique (chemin plus long) pour le backlink.
-  return [...normalized].sort((a, b) => {
+/** Extrait l'URL principale (préfère la homepage du site). */
+export function extractUrlFromContent(content: string) {
+  const urls = extractAllUrlsFromContent(content);
+  if (!urls.length) return null;
+
+  // Préfère la homepage (chemin le plus court), ex. https://ondima.ma/
+  return [...urls].sort((a, b) => {
     try {
-      return new URL(b).pathname.length - new URL(a).pathname.length;
+      return new URL(a).pathname.length - new URL(b).pathname.length;
     } catch {
-      return b.length - a.length;
+      return a.length - b.length;
     }
   })[0];
 }
@@ -39,9 +51,11 @@ export function resolveArticleBacklinkUrl(input: {
   targetUrl?: string | null;
   content: string;
 }) {
+  // Préfère la homepage présente dans le contenu (ex. https://ondima.ma/)
+  // puis le targetUrl enregistré.
   return (
-    normalizeBacklinkUrl(input.targetUrl) ||
-    extractUrlFromContent(input.content)
+    extractUrlFromContent(input.content) ||
+    normalizeBacklinkUrl(input.targetUrl)
   );
 }
 
@@ -54,6 +68,14 @@ export function stripTrailingBareUrls(content: string) {
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hostLabel(href: string) {
+  try {
+    return new URL(href).host.replace(/^www\./, "");
+  } catch {
+    return href.replace(/^https?:\/\//, "");
+  }
 }
 
 type Segment =
@@ -135,7 +157,10 @@ function renderSegments(segments: Segment[], className?: string): ReactNode {
   });
 }
 
-/** Contenu d'article avec ancres SEO sur les mots-clés. */
+const linkClass =
+  "font-medium text-[var(--brand-navy)] underline decoration-[var(--brand-navy)]/25 underline-offset-[3px] hover:decoration-[var(--brand-navy)]";
+
+/** Contenu d'article avec ancres SEO naturelles dans le texte. */
 export function ArticleBacklinkContent({
   content,
   keywords,
@@ -145,7 +170,24 @@ export function ArticleBacklinkContent({
   keywords: string[];
   targetUrl?: string | null;
 }) {
-  const href = resolveArticleBacklinkUrl({ targetUrl, content });
+  const allUrls = extractAllUrlsFromContent(content);
+  const homepage =
+    extractUrlFromContent(content) ||
+    normalizeBacklinkUrl(targetUrl) ||
+    allUrls[0] ||
+    null;
+
+  // Mots-clés + marque éventuelle (ex. Ondima) liés vers la homepage
+  const brandFromHost = homepage
+    ? hostLabel(homepage).split(".")[0]
+    : null;
+  const linkKeywords = [
+    ...keywords,
+    ...(brandFromHost && brandFromHost.length > 2
+      ? [brandFromHost, brandFromHost[0].toUpperCase() + brandFromHost.slice(1)]
+      : []),
+  ];
+
   const cleaned = stripTrailingBareUrls(content);
   const paragraphs = cleaned
     .split(/\n{2,}|\r\n{2,}/)
@@ -173,24 +215,49 @@ export function ArticleBacklinkContent({
           );
         }
 
-        // Ignore bare URLs in the body (avoid spammy naked links)
         if (/^https?:\/\//i.test(paragraph)) {
           return null;
         }
 
         return (
           <p key={`p-${index}`} className="whitespace-pre-wrap">
-            {href
-              ? renderSegments(linkKeywordsInText(paragraph, keywords, href))
+            {homepage
+              ? renderSegments(
+                  linkKeywordsInText(paragraph, linkKeywords, homepage),
+                )
               : paragraph}
           </p>
         );
       })}
 
-      {href ? (
-        <p className="pt-4">
+      {homepage ? (
+        <p>
+          Pour en savoir plus, consultez le site officiel{" "}
           <a
-            href={href}
+            href={homepage}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={linkClass}
+          >
+            {hostLabel(homepage)}
+          </a>{" "}
+          (
+          <a
+            href={homepage}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={linkClass}
+          >
+            {homepage}
+          </a>
+          ).
+        </p>
+      ) : null}
+
+      {homepage ? (
+        <p className="pt-2">
+          <a
+            href={homepage}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center rounded-full bg-[var(--brand-navy)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[color-mix(in_srgb,var(--brand-navy)_88%,black)]"
