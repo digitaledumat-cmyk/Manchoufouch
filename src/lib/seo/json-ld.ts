@@ -1,17 +1,32 @@
 import type { Article } from "@/lib/data/articles";
 import { getDomainLabel } from "@/lib/data/domains";
 import { absoluteUrl } from "@/lib/seo/metadata";
-import { SITE_CONFIG } from "@/lib/seo/site";
+import { getWhatsAppUrl, SITE_CONFIG } from "@/lib/seo/site";
 
 export function organizationJsonLd() {
+  const logoUrl = absoluteUrl(SITE_CONFIG.logoPath);
+
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: SITE_CONFIG.name,
+    legalName: SITE_CONFIG.name,
     url: SITE_CONFIG.url,
     description: SITE_CONFIG.description,
     email: SITE_CONFIG.email,
     telephone: SITE_CONFIG.phone,
+    logo: {
+      "@type": "ImageObject",
+      url: logoUrl,
+      width: 512,
+      height: 512,
+      contentUrl: logoUrl,
+      caption: SITE_CONFIG.name,
+    },
+    image: logoUrl,
+    sameAs: [
+      getWhatsAppUrl(),
+    ].filter(Boolean),
   };
 }
 
@@ -52,7 +67,14 @@ export function articleJsonLd(article: Article) {
       "@type": "Organization",
       name: SITE_CONFIG.name,
       url: SITE_CONFIG.url,
+      logo: {
+        "@type": "ImageObject",
+        url: absoluteUrl(SITE_CONFIG.logoPath),
+        width: 512,
+        height: 512,
+      },
     },
+    image: absoluteUrl(SITE_CONFIG.logoPath),
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": absoluteUrl(`/articles/${article.slug}`),

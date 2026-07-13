@@ -43,6 +43,10 @@ export const SITE_CONFIG = {
   email: "manchoufouch@contact.ma",
   /** Numéro WhatsApp sans espaces ni + (format international). */
   whatsapp: "212661876103",
+  /** Logo carré pour Google Search / Knowledge Graph (≥112×112). */
+  logoPath: "/logo-schema.png",
+  /** Favicon Google Search (multiple de 48×48). */
+  faviconPath: "/favicon-48x48.png",
 } as const;
 
 export function getWhatsAppUrl(message?: string) {
