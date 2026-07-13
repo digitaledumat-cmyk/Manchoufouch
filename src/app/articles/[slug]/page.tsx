@@ -6,16 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { JsonLd } from "@/components/seo/json-ld";
-import {
-  ARTICLES,
-  resolveArticleBySlug,
-} from "@/lib/data/articles";
+import { resolveArticleBySlug } from "@/lib/data/articles";
 import { getDomainLabel } from "@/lib/data/domains";
 import {
   articleJsonLd,
   breadcrumbJsonLd,
 } from "@/lib/seo/json-ld";
 import { buildArticleMetadata } from "@/lib/seo/metadata";
+import { listLivePublishedArticles } from "@/lib/seo/published-store";
 import { cn } from "@/lib/utils";
 
 type PageProps = {
@@ -26,7 +24,8 @@ export const dynamic = "force-dynamic";
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
-  return ARTICLES.map((article) => ({ slug: article.slug }));
+  const articles = await listLivePublishedArticles();
+  return articles.map((article) => ({ slug: article.slug }));
 }
 
 export async function generateMetadata({

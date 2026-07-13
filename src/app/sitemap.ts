@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
 
-import { getPublishedArticles } from "@/lib/data/articles";
 import { readPublishedArticles } from "@/lib/seo/published-store";
 import { SITE_CONFIG } from "@/lib/seo/site";
 
@@ -31,13 +30,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  const demoArticles = getPublishedArticles().map((article) => ({
-    url: `${origin}/articles/${article.slug}`,
-    lastModified: new Date(article.updatedAt),
-    changeFrequency: "weekly" as const,
-    priority: 0.7,
-  }));
-
   const clientArticles = (await readPublishedArticles()).map((article) => ({
     url: `${origin}/articles/${article.slug}`,
     lastModified: new Date(article.updatedAt),
@@ -45,5 +37,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
-  return [...staticRoutes, ...demoArticles, ...clientArticles];
+  return [...staticRoutes, ...clientArticles];
 }

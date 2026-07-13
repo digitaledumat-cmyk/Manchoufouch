@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 
-import { AnnoncesList } from "@/components/articles/annonces-list";
 import { MyArticlesReadonly } from "@/components/articles/my-articles-readonly";
-import { ARTICLES } from "@/lib/data/articles";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = buildMetadata({
@@ -26,7 +24,6 @@ export default function DashboardArticlesPage() {
         </p>
       </div>
       <MyArticlesReadonly />
-      <AnnoncesList articles={ARTICLES} />
     </div>
   );
 }
