@@ -51,7 +51,6 @@ export function HomeHero() {
         </div>
 
         <div className="relative mx-auto flex h-[320px] w-full max-w-md items-center justify-center sm:h-[400px] lg:max-w-none lg:h-[460px]">
-          <div className="absolute inset-6 rounded-[1.5rem] border border-[#e8ecf0] bg-white shadow-[0_24px_60px_-28px_rgb(30_42_59_/_0.28)] sm:inset-8" />
           <CircleMotionImage
             src="/home/analytics-desk.jpg"
             alt="Bureau analytics Google et tableaux de bord SEO"

@@ -41,7 +41,6 @@ export function HomeCta() {
         </div>
 
         <div className="relative mx-auto flex h-56 w-full max-w-sm items-center justify-center sm:h-64">
-          <div className="absolute inset-4 rounded-[1.25rem] border border-[#e8ecf0] bg-white shadow-[0_24px_60px_-28px_rgb(30_42_59_/_0.28)]" />
           <CircleMotionImage
             src="/home/analytics-desk.jpg"
             alt="Dashboard analytics"
