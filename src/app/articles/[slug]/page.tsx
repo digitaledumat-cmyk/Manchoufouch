@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { JsonLd } from "@/components/seo/json-ld";
 import { resolveArticleBySlug } from "@/lib/data/articles";
@@ -18,7 +16,6 @@ import {
 } from "@/lib/seo/json-ld";
 import { buildArticleMetadata } from "@/lib/seo/metadata";
 import { listLivePublishedArticles } from "@/lib/seo/published-store";
-import { cn } from "@/lib/utils";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -129,25 +126,6 @@ export default async function SeoArticlePage({ params }: PageProps) {
             </div>
           ) : null}
         </section>
-
-        <div className="mt-10 flex flex-wrap gap-3">
-          <Link
-            href="/articles"
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            Tous les articles SEO
-          </Link>
-          {backlinkUrl ? (
-            <a
-              href={backlinkUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(buttonVariants())}
-            >
-              Plus d&apos;info
-            </a>
-          ) : null}
-        </div>
       </article>
     </>
   );

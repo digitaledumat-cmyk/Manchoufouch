@@ -253,19 +253,6 @@ export function ArticleBacklinkContent({
           ).
         </p>
       ) : null}
-
-      {homepage ? (
-        <p className="pt-2">
-          <a
-            href={homepage}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center rounded-full bg-[var(--brand-navy)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[color-mix(in_srgb,var(--brand-navy)_88%,black)]"
-          >
-            Plus d&apos;info
-          </a>
-        </p>
-      ) : null}
     </div>
   );
 }
