@@ -29,7 +29,7 @@ export function HomeServices() {
           />
         </div>
         <div className="space-y-4">
-          <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
             {HOME_INTRO.title}
           </h2>
           <p className="text-muted-foreground">{HOME_INTRO.text}</p>
@@ -37,7 +37,7 @@ export function HomeServices() {
       </div>
 
       <div className="mb-12 max-w-2xl space-y-3">
-        <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Nos services pour dominer Google
         </h2>
         <p className="text-muted-foreground">
@@ -77,7 +77,7 @@ export function HomeServices() {
               </div>
 
               <div className="space-y-5">
-                <h3 className="text-2xl font-semibold tracking-tight">
+                <h3 className="text-2xl font-bold tracking-tight">
                   {service.title}
                 </h3>
                 <p className="text-muted-foreground">{service.description}</p>
@@ -87,7 +87,7 @@ export function HomeServices() {
                       key={point}
                       className="flex items-start gap-2 text-sm text-foreground/90"
                     >
-                      <Check className="mt-0.5 size-4 shrink-0" />
+                      <Check className="mt-0.5 size-4 shrink-0 text-[var(--brand-coral)]" />
                       {point}
                     </li>
                   ))}
@@ -96,7 +96,7 @@ export function HomeServices() {
                   href={service.href}
                   className={cn(
                     buttonVariants({ variant: "outline" }),
-                    "inline-flex",
+                    "inline-flex rounded-full",
                   )}
                 >
                   En savoir plus

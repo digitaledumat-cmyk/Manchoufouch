@@ -2,10 +2,10 @@ import { HOME_FAQ } from "@/lib/data/home";
 
 export function HomeFaq() {
   return (
-    <section id="faq" className="border-y bg-muted/30">
+    <section id="faq" className="border-y border-[#e8ecf0] bg-[var(--brand-mist)]">
       <div className="mx-auto w-full max-w-3xl px-4 py-20">
         <div className="mb-10 space-y-3 text-center">
-          <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
             Vous avez encore des questions ?
           </h2>
           <p className="text-muted-foreground">
@@ -22,7 +22,7 @@ export function HomeFaq() {
               <summary className="cursor-pointer list-none font-medium outline-none marker:content-none [&::-webkit-details-marker]:hidden">
                 <span className="flex items-start justify-between gap-4">
                   {item.question}
-                  <span className="mt-0.5 text-muted-foreground transition group-open:rotate-45">
+                  <span className="mt-0.5 text-[var(--brand-coral)] transition group-open:rotate-45">
                     +
                   </span>
                 </span>

@@ -7,7 +7,7 @@ export function HomeProcess() {
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-20">
       <div className="mb-12 max-w-2xl space-y-3">
-        <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Un processus optimisé pour des résultats concrets
         </h2>
         <p className="text-muted-foreground">

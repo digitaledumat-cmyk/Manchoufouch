@@ -3,11 +3,11 @@ import { HOME_RESULTS } from "@/lib/data/home";
 
 export function HomeResults() {
   return (
-    <section className="border-y bg-muted/30">
+    <section className="border-y border-[#e8ecf0] bg-[var(--brand-mist)]">
       <div className="mx-auto w-full max-w-6xl px-4 py-20">
         <div className="mb-12 grid items-center gap-10 lg:grid-cols-[1fr_auto]">
           <div className="max-w-2xl space-y-3">
-            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Attendez-vous à des résultats exceptionnels
             </h2>
             <p className="text-muted-foreground">
@@ -50,7 +50,7 @@ export function HomeResults() {
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Après
                   </p>
-                  <p className="text-4xl font-semibold tracking-tight">
+                  <p className="text-4xl font-bold tracking-tight text-[var(--brand-coral)]">
                     {result.after}
                   </p>
                 </div>

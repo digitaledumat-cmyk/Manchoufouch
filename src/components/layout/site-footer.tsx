@@ -21,7 +21,7 @@ const FOOTER_LINKS = {
 
 export function SiteFooter() {
   return (
-    <footer className="border-t bg-foreground text-background">
+    <footer className="border-t border-[var(--brand-navy)] bg-[var(--brand-navy)] text-white">
       <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-3 sm:col-span-2 lg:col-span-1">
           <Link href="/" className="inline-flex items-center gap-2">

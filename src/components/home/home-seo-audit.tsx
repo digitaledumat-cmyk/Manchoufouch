@@ -96,7 +96,7 @@ export function HomeSeoAudit() {
             <Gauge className="size-4" />
             Audit SEO gratuit
           </p>
-          <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
             Analyser votre site web
           </h2>
           <p className="max-w-xl text-muted-foreground">
@@ -124,7 +124,7 @@ export function HomeSeoAudit() {
         </div>
       </div>
 
-      <div className="rounded-2xl border bg-background/80 p-5 shadow-[0_20px_60px_-40px_rgba(0,0,0,0.35)] sm:p-8">
+      <div className="home-soft-card rounded-2xl border border-[#e8ecf0] bg-white p-5 sm:p-8">
         <form
           onSubmit={handleAnalyze}
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
@@ -144,7 +144,12 @@ export function HomeSeoAudit() {
               Pas besoin de https:// — un domaine comme exemple.ma suffit.
             </p>
           </div>
-          <Button type="submit" size="lg" disabled={isPending} className="sm:mb-0.5">
+          <Button
+            type="submit"
+            size="lg"
+            disabled={isPending}
+            className="home-cta-primary sm:mb-0.5"
+          >
             {isPending ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (

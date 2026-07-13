@@ -49,7 +49,7 @@ export function CircleMotionImage({
   return (
     <div
       className={cn(
-        "relative shrink-0 overflow-hidden rounded-full border border-border/60 bg-muted shadow-[0_20px_50px_-24px_rgba(0,0,0,0.35)] ring-4 ring-background/70",
+        "relative shrink-0 overflow-hidden rounded-full border border-[#e8ecf0] bg-muted shadow-[0_20px_50px_-24px_rgba(30,42,59,0.28)] ring-4 ring-white/80",
         SIZE_CLASS[size],
         MOTION_CLASS[motion],
         className,

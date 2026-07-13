@@ -7,13 +7,13 @@ import { cn } from "@/lib/utils";
 
 export function HomeCta() {
   return (
-    <section className="relative overflow-hidden">
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,oklch(0.97_0_0),oklch(0.93_0_0)_40%,oklch(0.98_0_0))]" />
-      <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(oklch(0.7_0_0/0.15)_1px,transparent_1px)] [background-size:18px_18px]" />
+    <section className="relative overflow-hidden home-section-alt">
+      <div className="absolute -right-20 top-10 size-72 rounded-full bg-[var(--brand-coral)]/10 blur-3xl" />
+      <div className="absolute -left-16 bottom-0 size-64 rounded-full bg-[var(--brand-navy)]/5 blur-3xl" />
 
       <div className="relative mx-auto grid w-full max-w-6xl items-center gap-10 px-4 py-20 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="flex flex-col items-start gap-6">
-          <h2 className="max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h2 className="max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
             Propulsez votre visibilité et atteignez vos objectifs
           </h2>
           <p className="max-w-xl text-muted-foreground">
@@ -23,14 +23,17 @@ export function HomeCta() {
           <div className="flex flex-wrap gap-3">
             <Link
               href="/dashboard/create-article"
-              className={cn(buttonVariants({ size: "lg" }))}
+              className={cn(buttonVariants({ size: "lg" }), "home-cta-primary")}
             >
               Créer un brief
               <ArrowRight className="size-4" />
             </Link>
             <Link
               href="/pricing"
-              className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
+              className={cn(
+                buttonVariants({ variant: "outline", size: "lg" }),
+                "home-cta-secondary",
+              )}
             >
               Voir les tarifs
             </Link>
@@ -38,6 +41,7 @@ export function HomeCta() {
         </div>
 
         <div className="relative mx-auto flex h-56 w-full max-w-sm items-center justify-center sm:h-64">
+          <div className="absolute inset-4 rounded-[1.25rem] border border-[#e8ecf0] bg-white shadow-[0_24px_60px_-28px_rgb(30_42_59_/_0.28)]" />
           <CircleMotionImage
             src="/home/analytics-desk.jpg"
             alt="Dashboard analytics"

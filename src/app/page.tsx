@@ -15,7 +15,7 @@ import { HomeTestimonials } from "@/components/home/home-testimonials";
 
 export default function HomePage() {
   return (
-    <>
+    <div className="home-page">
       <HomeHero />
       <HomeStats />
       <HomeSeoAudit />
@@ -30,6 +30,6 @@ export default function HomePage() {
       <HomeTestimonials />
       <HomeFaq />
       <HomeCta />
-    </>
+    </div>
   );
 }

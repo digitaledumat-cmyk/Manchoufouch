@@ -7,7 +7,7 @@ export function HomeTestimonials() {
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-20">
       <div className="mb-12 max-w-2xl space-y-3">
-        <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Nos clients sont heureux
         </h2>
         <p className="text-muted-foreground">
@@ -15,11 +15,11 @@ export function HomeTestimonials() {
         </p>
       </div>
 
-      <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {HOME_TESTIMONIALS.map((item, index) => (
           <blockquote
             key={item.name}
-            className="flex flex-col items-start gap-4"
+            className="home-soft-card flex flex-col items-start gap-4 p-5"
           >
             <CircleMotionImage
               src={item.image}
@@ -31,7 +31,9 @@ export function HomeTestimonials() {
               “{item.quote}”
             </p>
             <footer>
-              <p className="font-medium">{item.name}</p>
+              <p className="font-semibold text-[var(--brand-navy)]">
+                {item.name}
+              </p>
               <p className="text-sm text-muted-foreground">{item.role}</p>
             </footer>
           </blockquote>
