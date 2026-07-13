@@ -43,17 +43,53 @@ function getGeminiKey() {
   );
 }
 
-async function chatWithGemini(messages: ChatMessage[]) {
+/** Ordre : modèle configuré, puis lite (quota gratuit plus fiable), puis flash. */
+function getGeminiModelCandidates() {
+  const preferred = process.env.GEMINI_MODEL?.trim() || "gemini-flash-lite-latest";
+  const fallbacks = [
+    preferred,
+    "gemini-flash-lite-latest",
+    "gemini-flash-latest",
+    "gemini-2.0-flash-lite",
+  ];
+  return [...new Set(fallbacks.filter(Boolean))];
+}
+
+function extractGeminiText(data: {
+  candidates?: {
+    content?: { parts?: { text?: string; thought?: boolean }[] };
+    finishReason?: string;
+  }[];
+}) {
+  const parts = data.candidates?.[0]?.content?.parts ?? [];
+  return parts
+    .filter((part) => !part.thought)
+    .map((part) => part.text ?? "")
+    .join("")
+    .trim();
+}
+
+function parseGeminiJson(text: string) {
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      return JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>;
+    }
+    throw new Error("Réponse Gemini JSON invalide.");
+  }
+}
+
+async function chatWithGeminiModel(model: string, messages: ChatMessage[]) {
   const apiKey = getGeminiKey();
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY manquante.");
   }
 
-  // gemini-2.0-flash a souvent quota free = 0 pour les nouveaux comptes
-  const model = process.env.GEMINI_MODEL?.trim() || "gemini-flash-latest";
   const system = messages.find((m) => m.role === "system")?.content ?? "";
   const user = messages.find((m) => m.role === "user")?.content ?? "";
-
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const response = await fetch(url, {
@@ -73,27 +109,56 @@ async function chatWithGemini(messages: ChatMessage[]) {
     }),
   });
 
+  const detail = await response.text();
   if (!response.ok) {
-    const detail = await response.text();
-    if (response.status === 429) {
-      throw new Error(
-        "Quota Gemini dépassé (gratuit). Réessayez dans 1 minute, ou changez GEMINI_MODEL=gemini-flash-latest dans .env.local.",
-      );
-    }
-    throw new Error(`Erreur Gemini (${response.status}) : ${detail.slice(0, 300)}`);
+    const error = new Error(
+      response.status === 429
+        ? `Quota Gemini (${model}) dépassé.`
+        : `Erreur Gemini ${model} (${response.status}) : ${detail.slice(0, 220)}`,
+    ) as Error & { status?: number; model?: string };
+    error.status = response.status;
+    error.model = model;
+    throw error;
   }
 
-  const data = (await response.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
+  const data = JSON.parse(detail) as {
+    candidates?: {
+      content?: { parts?: { text?: string; thought?: boolean }[] };
+      finishReason?: string;
+    }[];
   };
 
-  const text = data.candidates?.[0]?.content?.parts
-    ?.map((p) => p.text ?? "")
-    .join("")
-    .trim();
-  if (!text) throw new Error("Réponse Gemini vide.");
+  const text = extractGeminiText(data);
+  if (!text) {
+    throw new Error(`Réponse Gemini vide (${model}).`);
+  }
 
-  return JSON.parse(text) as Record<string, unknown>;
+  return parseGeminiJson(text);
+}
+
+async function chatWithGemini(messages: ChatMessage[]) {
+  const models = getGeminiModelCandidates();
+  let lastError: Error | null = null;
+
+  for (const model of models) {
+    try {
+      return await chatWithGeminiModel(model, messages);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      const status = (error as { status?: number } | null)?.status;
+      // Retry on quota / overload / temporary model unavailability
+      if (status === 429 || status === 503 || status === 404) {
+        continue;
+      }
+      throw lastError;
+    }
+  }
+
+  throw new Error(
+    lastError?.message?.includes("Quota")
+      ? "Quota Gemini dépassé sur tous les modèles gratuits. Réessayez dans 1–2 minutes."
+      : lastError?.message || "Aucun modèle Gemini disponible.",
+  );
 }
 
 async function chatWithOpenAi(messages: ChatMessage[]) {
