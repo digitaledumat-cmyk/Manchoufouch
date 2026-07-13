@@ -75,7 +75,6 @@ export default async function SeoArticlePage({ params }: PageProps) {
       <article className="mx-auto w-full max-w-3xl px-4 py-12">
         <div className="mb-6 flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{getDomainLabel(article.domain)}</Badge>
-          <Badge>SEO Backlink</Badge>
           <Badge variant="outline">Article</Badge>
         </div>
 
@@ -100,51 +99,6 @@ export default async function SeoArticlePage({ params }: PageProps) {
 
         <Separator className="my-8" />
 
-        <section className="space-y-3">
-          <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-            Mots-clés SEO (backlinks)
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {article.keywords.map((keyword) =>
-              backlinkUrl ? (
-                <a
-                  key={keyword}
-                  href={backlinkUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex"
-                >
-                  <Badge
-                    variant="secondary"
-                    className="cursor-pointer border border-[var(--brand-coral)]/30 bg-[var(--brand-coral-soft)] text-[var(--brand-navy)] transition hover:border-[var(--brand-coral)]"
-                  >
-                    {keyword}
-                  </Badge>
-                </a>
-              ) : (
-                <Badge key={keyword} variant="secondary">
-                  {keyword}
-                </Badge>
-              ),
-            )}
-          </div>
-          {backlinkUrl ? (
-            <p className="text-xs text-muted-foreground">
-              Chaque mot-clé pointe vers{" "}
-              <a
-                href={backlinkUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-[var(--brand-coral)] underline underline-offset-2"
-              >
-                {backlinkUrl.replace(/^https?:\/\//, "")}
-              </a>
-            </p>
-          ) : null}
-        </section>
-
-        <Separator className="my-8" />
-
         <section className="prose prose-neutral max-w-none dark:prose-invert">
           <ArticleBacklinkContent
             content={article.content}
@@ -155,19 +109,8 @@ export default async function SeoArticlePage({ params }: PageProps) {
           {article.headings.h2.length > 0
             ? article.headings.h2.map((h2) => (
                 <div key={h2} className="mt-8">
-                  <h2 className="text-2xl font-semibold tracking-tight">
-                    {backlinkUrl ? (
-                      <a
-                        href={backlinkUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[var(--brand-navy)] hover:text-[var(--brand-coral)]"
-                      >
-                        {h2}
-                      </a>
-                    ) : (
-                      h2
-                    )}
+                  <h2 className="text-2xl font-semibold tracking-tight text-[var(--brand-navy)]">
+                    {h2}
                   </h2>
                 </div>
               ))
@@ -180,20 +123,7 @@ export default async function SeoArticlePage({ params }: PageProps) {
               </h3>
               <ul className="mt-3 list-disc space-y-1 pl-5 text-muted-foreground">
                 {article.headings.h3.map((h3) => (
-                  <li key={h3}>
-                    {backlinkUrl ? (
-                      <a
-                        href={backlinkUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-[var(--brand-coral)]"
-                      >
-                        {h3}
-                      </a>
-                    ) : (
-                      h3
-                    )}
-                  </li>
+                  <li key={h3}>{h3}</li>
                 ))}
               </ul>
             </div>
@@ -214,16 +144,9 @@ export default async function SeoArticlePage({ params }: PageProps) {
               rel="noopener noreferrer"
               className={cn(buttonVariants())}
             >
-              Site client (backlink)
+              Plus d&apos;info
             </a>
-          ) : (
-            <Link
-              href={`/articles/${article.slug}`}
-              className={cn(buttonVariants({ variant: "secondary" }))}
-            >
-              Lien permanent
-            </Link>
-          )}
+          ) : null}
         </div>
       </article>
     </>

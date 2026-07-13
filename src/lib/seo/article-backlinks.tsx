@@ -126,7 +126,7 @@ function renderSegments(segments: Segment[], className?: string): ReactNode {
         rel="noopener noreferrer"
         className={
           className ??
-          "font-medium text-[var(--brand-coral)] underline decoration-[var(--brand-coral)]/40 underline-offset-2 hover:decoration-[var(--brand-coral)]"
+          "font-medium text-[var(--brand-navy)] underline decoration-[var(--brand-navy)]/25 underline-offset-[3px] hover:decoration-[var(--brand-navy)]"
         }
       >
         {segment.value}
@@ -168,69 +168,34 @@ export function ArticleBacklinkContent({
               key={`h-${index}`}
               className="pt-2 text-2xl font-semibold tracking-tight text-[var(--brand-navy)]"
             >
-              {href
-                ? renderSegments(
-                    linkKeywordsInText(paragraph, keywords, href),
-                  )
-                : paragraph}
+              {paragraph}
             </h2>
           );
         }
 
-        const withBareUrls = paragraph.replace(
-          /(https?:\/\/[^\s<>"')\]]+)/gi,
-          (url) => {
-            const cleanedUrl = url.replace(/[.,;:!?)]+$/, "");
-            return cleanedUrl;
-          },
-        );
-
-        // Convert leftover bare URLs to links, then keyword-link the rest
-        const urlParts = withBareUrls.split(/(https?:\/\/[^\s]+)/gi);
-        const nodes: ReactNode[] = [];
-
-        urlParts.forEach((part, partIndex) => {
-          if (/^https?:\/\//i.test(part)) {
-            const linkHref = normalizeBacklinkUrl(part) || part;
-            nodes.push(
-              <a
-                key={`u-${index}-${partIndex}`}
-                href={linkHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="break-all font-medium text-[var(--brand-coral)] underline underline-offset-2"
-              >
-                {part}
-              </a>,
-            );
-            return;
-          }
-          if (!part) return;
-          nodes.push(
-            <span key={`p-${index}-${partIndex}`}>
-              {href
-                ? renderSegments(linkKeywordsInText(part, keywords, href))
-                : part}
-            </span>,
-          );
-        });
+        // Ignore bare URLs in the body (avoid spammy naked links)
+        if (/^https?:\/\//i.test(paragraph)) {
+          return null;
+        }
 
         return (
           <p key={`p-${index}`} className="whitespace-pre-wrap">
-            {nodes}
+            {href
+              ? renderSegments(linkKeywordsInText(paragraph, keywords, href))
+              : paragraph}
           </p>
         );
       })}
 
       {href ? (
-        <p className="pt-2">
+        <p className="pt-4">
           <a
             href={href}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center rounded-full bg-[var(--brand-navy)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[color-mix(in_srgb,var(--brand-navy)_88%,black)]"
           >
-            Visiter le site →
+            Plus d&apos;info
           </a>
         </p>
       ) : null}
