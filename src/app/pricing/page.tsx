@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { HomeTestimonials } from "@/components/home/home-testimonials";
 import { PricingCards } from "@/components/pricing/pricing-cards";
 import { JsonLd } from "@/components/seo/json-ld";
 import { breadcrumbJsonLd, pricingOfferJsonLd } from "@/lib/seo/json-ld";
@@ -42,6 +43,9 @@ export default function PricingPage() {
             backlinks, méta). Commencez par créer un compte, puis choisissez
             votre pack.
           </p>
+          <p className="mt-3 text-sm font-medium text-[var(--brand-navy)]">
+            Note moyenne : 4.8/5 — basée sur 160+ clients satisfaits
+          </p>
           <ol className="mt-6 grid gap-2 text-left text-sm text-muted-foreground sm:grid-cols-3 sm:text-center">
             <li className="rounded-lg border bg-muted/30 px-3 py-2">
               1. Créer un compte
@@ -56,6 +60,7 @@ export default function PricingPage() {
         </div>
         <PricingCards />
       </div>
+      <HomeTestimonials />
     </>
   );
 }
