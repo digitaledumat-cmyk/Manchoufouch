@@ -1,7 +1,46 @@
 import type { Article } from "@/lib/data/articles";
 import { getDomainLabel } from "@/lib/data/domains";
+import { HOME_STATS, HOME_TESTIMONIALS } from "@/lib/data/home";
 import { absoluteUrl } from "@/lib/seo/metadata";
 import { getWhatsAppUrl, SITE_CONFIG } from "@/lib/seo/site";
+
+const PRODUCT_RATING_VALUE = "4.8";
+const PRODUCT_RATING_COUNT = "160";
+
+function productReviewsJsonLd() {
+  return HOME_TESTIMONIALS.map((testimonial) => ({
+    "@type": "Review",
+    author: {
+      "@type": "Person",
+      name: testimonial.name,
+    },
+    reviewBody: testimonial.quote,
+    reviewRating: {
+      "@type": "Rating",
+      ratingValue: "5",
+      bestRating: "5",
+      worstRating: "1",
+    },
+  }));
+}
+
+function productAggregateRatingJsonLd() {
+  // Aligné sur la stat « Satisfaction moyenne » affichée en homepage.
+  const satisfaction = HOME_STATS.find((stat) =>
+    stat.label.toLowerCase().includes("satisfaction"),
+  );
+  const ratingValue =
+    satisfaction?.value.replace(/\/5$/, "") ?? PRODUCT_RATING_VALUE;
+
+  return {
+    "@type": "AggregateRating",
+    ratingValue,
+    bestRating: "5",
+    worstRating: "1",
+    ratingCount: PRODUCT_RATING_COUNT,
+    reviewCount: String(HOME_TESTIMONIALS.length),
+  };
+}
 
 export function organizationJsonLd() {
   const logoUrl = absoluteUrl(SITE_CONFIG.logoPath);
@@ -103,6 +142,7 @@ export function pricingOfferJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "Product",
+    "@id": absoluteUrl("/pricing#product"),
     name: `${SITE_CONFIG.name} Crédits articles SEO`,
     description:
       "Packs de crédits pour publier des articles SEO optimisés avec backlinks.",
@@ -110,6 +150,8 @@ export function pricingOfferJsonLd() {
       "@type": "Brand",
       name: SITE_CONFIG.name,
     },
+    aggregateRating: productAggregateRatingJsonLd(),
+    review: productReviewsJsonLd(),
     offers: [
       {
         "@type": "Offer",
