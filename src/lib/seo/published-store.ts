@@ -55,7 +55,9 @@ async function readFromBlob(): Promise<Article[] | null> {
     ) {
       return null;
     }
-    throw error;
+    // Fallback disque plutôt qu'un 500 sur /sitemap.xml / pages articles.
+    console.error("[published-store] Lecture Blob échouée:", error);
+    return null;
   }
 }
 

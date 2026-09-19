@@ -13,8 +13,7 @@ const FOOTER_LINKS = {
   services: [
     { href: "/auth/register", label: "Créer un compte" },
     { href: "/pricing", label: "Acheter des crédits" },
-    { href: "/dashboard/create-article", label: "SEO Backlink" },
-    { href: "/admin", label: "Panel admin" },
+    { href: "/articles", label: "SEO Backlink" },
     { href: "/#audit-seo", label: "Audit score SEO" },
   ],
 } as const;
@@ -39,6 +38,10 @@ export function SiteFooter() {
           <p className="text-sm text-background/70">
             Plateforme de référencement et de contenu SEO pour générer du trafic
             qualifié et maximiser votre retour sur investissement.
+          </p>
+          <p className="text-sm text-background/70">
+            {SITE_CONFIG.geo.primaryCity}, {SITE_CONFIG.geo.countryName} —{" "}
+            {SITE_CONFIG.geo.cities.join(", ")}
           </p>
           <a
             href={getWhatsAppUrl()}

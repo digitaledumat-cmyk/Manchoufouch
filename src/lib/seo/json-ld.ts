@@ -3,30 +3,89 @@ import { getDomainLabel } from "@/lib/data/domains";
 import { absoluteUrl } from "@/lib/seo/metadata";
 import { getWhatsAppUrl, SITE_CONFIG } from "@/lib/seo/site";
 
-export function organizationJsonLd() {
+function logoImageObject() {
   const logoUrl = absoluteUrl(SITE_CONFIG.logoPath);
+  return {
+    "@type": "ImageObject",
+    url: logoUrl,
+    width: 512,
+    height: 512,
+    contentUrl: logoUrl,
+    caption: SITE_CONFIG.name,
+  };
+}
+
+function areaServedJsonLd() {
+  return [
+    {
+      "@type": "Country",
+      name: SITE_CONFIG.geo.countryName,
+    },
+    ...SITE_CONFIG.geo.cities.map((city) => ({
+      "@type": "City",
+      name: city,
+      containedInPlace: {
+        "@type": "Country",
+        name: SITE_CONFIG.geo.countryName,
+      },
+    })),
+  ];
+}
+
+export function organizationJsonLd() {
+  const logo = logoImageObject();
 
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": absoluteUrl("/#organization"),
     name: SITE_CONFIG.name,
     legalName: SITE_CONFIG.name,
     url: SITE_CONFIG.url,
     description: SITE_CONFIG.description,
     email: SITE_CONFIG.email,
     telephone: SITE_CONFIG.phone,
-    logo: {
-      "@type": "ImageObject",
-      url: logoUrl,
-      width: 512,
-      height: 512,
-      contentUrl: logoUrl,
-      caption: SITE_CONFIG.name,
+    logo,
+    image: logo.url,
+    areaServed: areaServedJsonLd(),
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: SITE_CONFIG.geo.primaryCity,
+      addressCountry: SITE_CONFIG.geo.countryCode,
     },
-    image: logoUrl,
-    sameAs: [
-      getWhatsAppUrl(),
-    ].filter(Boolean),
+    sameAs: [getWhatsAppUrl()].filter(Boolean),
+  };
+}
+
+/** Agence SEO locale Maroc — Knowledge Graph / local SEO. */
+export function localBusinessJsonLd() {
+  const logo = logoImageObject();
+
+  return {
+    "@context": "https://schema.org",
+    "@type": ["ProfessionalService", "LocalBusiness"],
+    "@id": absoluteUrl("/#localbusiness"),
+    name: SITE_CONFIG.name,
+    url: SITE_CONFIG.url,
+    description: SITE_CONFIG.description,
+    email: SITE_CONFIG.email,
+    telephone: SITE_CONFIG.phone,
+    image: logo.url,
+    logo,
+    priceRange: "$$",
+    currenciesAccepted: "MAD",
+    paymentAccepted: "Cash, Credit Card, Bank Transfer",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: SITE_CONFIG.geo.primaryCity,
+      addressCountry: SITE_CONFIG.geo.countryCode,
+    },
+    areaServed: areaServedJsonLd(),
+    availableLanguage: ["fr", "ar"],
+    parentOrganization: {
+      "@id": absoluteUrl("/#organization"),
+    },
+    sameAs: [getWhatsAppUrl()].filter(Boolean),
   };
 }
 
@@ -34,14 +93,13 @@ export function websiteJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": absoluteUrl("/#website"),
     name: SITE_CONFIG.name,
     url: SITE_CONFIG.url,
     description: SITE_CONFIG.description,
-    inLanguage: "fr-FR",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: `${SITE_CONFIG.url}/articles?q={search_term_string}`,
-      "query-input": "required name=search_term_string",
+    inLanguage: SITE_CONFIG.language,
+    publisher: {
+      "@id": absoluteUrl("/#organization"),
     },
   };
 }
@@ -56,7 +114,7 @@ export function articleJsonLd(article: Article) {
     name: article.title,
     description: article.metaDescription,
     keywords: article.keywords.join(", "),
-    inLanguage: "fr-FR",
+    inLanguage: SITE_CONFIG.language,
     datePublished: article.publishedAt,
     dateModified: article.updatedAt,
     author: {
