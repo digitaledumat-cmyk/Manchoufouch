@@ -47,6 +47,10 @@ export function buildMetadata({
     keywords: keywords.length ? keywords : undefined,
     alternates: {
       canonical: url,
+      languages: {
+        [SITE_CONFIG.language]: url,
+        "x-default": url,
+      },
     },
     openGraph: {
       title: fullTitle,
@@ -66,6 +70,10 @@ export function buildMetadata({
           alt: title,
         },
       ],
+    },
+    other: {
+      "geo.region": SITE_CONFIG.geo.countryCode,
+      "geo.placename": SITE_CONFIG.geo.primaryCity,
     },
     twitter: {
       card: "summary_large_image",

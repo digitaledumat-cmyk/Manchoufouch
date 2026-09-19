@@ -4,7 +4,11 @@ import { Geist_Mono, Outfit } from "next/font/google";
 import { AppShell } from "@/components/layout/app-shell";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { JsonLd } from "@/components/seo/json-ld";
-import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/json-ld";
+import {
+  localBusinessJsonLd,
+  organizationJsonLd,
+  websiteJsonLd,
+} from "@/lib/seo/json-ld";
 import { getAllMoroccoSeoKeywords } from "@/lib/data/morocco-seo-keywords";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { SITE_CONFIG } from "@/lib/seo/site";
@@ -54,7 +58,13 @@ export default function RootLayout({
       className={`${outfit.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
+        <JsonLd
+          data={[
+            organizationJsonLd(),
+            localBusinessJsonLd(),
+            websiteJsonLd(),
+          ]}
+        />
         <AppShell>{children}</AppShell>
         <SiteFooter />
       </body>

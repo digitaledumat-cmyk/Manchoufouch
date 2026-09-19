@@ -38,6 +38,8 @@ export const SITE_CONFIG = {
     "Référencement Google, backlinks et Ads au Maroc. Manchoufouch booste votre visibilité à Casablanca, Rabat, Marrakech et partout dans le Royaume.",
   url: resolveSiteUrl(),
   locale: "fr_MA",
+  /** BCP 47 language tag (HTML / JSON-LD / hreflang). */
+  language: "fr-MA",
   twitter: "@manchoufouch",
   phone: "+212 661 876 103",
   email: "manchoufouch@contact.ma",
@@ -47,6 +49,13 @@ export const SITE_CONFIG = {
   logoPath: "/logo-schema.png",
   /** Favicon Google Search (multiple de 48×48). */
   faviconPath: "/favicon-48x48.png",
+  /** Ciblage géo Maroc (schema LocalBusiness / areaServed). */
+  geo: {
+    countryCode: "MA",
+    countryName: "Maroc",
+    primaryCity: "Casablanca",
+    cities: ["Casablanca", "Rabat", "Marrakech"],
+  },
 } as const;
 
 export function getWhatsAppUrl(message?: string) {
