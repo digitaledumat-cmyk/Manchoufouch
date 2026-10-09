@@ -164,6 +164,9 @@ export function linkKeywordsInText(
   const segments: Segment[] = [];
   let lastIndex = 0;
 
+  const isInsideUrl = (index: number) =>
+    /https?:\/\/[^\s]*$/i.test(text.slice(0, index));
+
   for (const match of text.matchAll(pattern)) {
     const value = match[0];
     const index = match.index ?? 0;
@@ -173,6 +176,13 @@ export function linkKeywordsInText(
 
     if (index > lastIndex) {
       segments.push({ type: "text", value: text.slice(lastIndex, index) });
+    }
+
+    // Ne jamais transformer un mot à l'intérieur d'une URL (ex. ondima.ma/…).
+    if (isInsideUrl(index)) {
+      segments.push({ type: "text", value });
+      lastIndex = index + value.length;
+      continue;
     }
 
     if (target && count < maxLinksPerKeyword) {
