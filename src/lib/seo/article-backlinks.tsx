@@ -66,6 +66,38 @@ export function stripTrailingBareUrls(content: string) {
     .trim();
 }
 
+/**
+ * Bloc optionnel en tête d'article :
+ * @@linkmap
+ * iptv maroc|https://ondima.ma/iptv-maroc
+ * abonnement iptv maroc|https://ondima.ma/abonnement-iptv-maroc
+ * @@
+ */
+export function extractLinkMap(content: string): {
+  content: string;
+  linkMap: Map<string, string>;
+} {
+  const linkMap = new Map<string, string>();
+  const match = content.match(/@@linkmap\s*([\s\S]*?)@@\s*/i);
+  if (!match) return { content, linkMap };
+
+  for (const line of match[1].split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const sep = trimmed.includes("|") ? "|" : "=";
+    const idx = trimmed.indexOf(sep);
+    if (idx <= 0) continue;
+    const keyword = trimmed.slice(0, idx).trim().toLowerCase();
+    const href = normalizeBacklinkUrl(trimmed.slice(idx + 1).trim());
+    if (keyword && href) linkMap.set(keyword, href);
+  }
+
+  return {
+    content: content.replace(match[0], "").trim(),
+    linkMap,
+  };
+}
+
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -82,8 +114,31 @@ type Segment =
   | { type: "text"; value: string }
   | { type: "link"; value: string; href: string };
 
+/** Parse les liens markdown [ancre](https://…). */
+export function parseMarkdownLinks(text: string): Segment[] {
+  const pattern = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/gi;
+  const segments: Segment[] = [];
+  let lastIndex = 0;
+
+  for (const match of text.matchAll(pattern)) {
+    const index = match.index ?? 0;
+    if (index > lastIndex) {
+      segments.push({ type: "text", value: text.slice(lastIndex, index) });
+    }
+    const href = normalizeBacklinkUrl(match[2]) || match[2];
+    segments.push({ type: "link", value: match[1], href });
+    lastIndex = index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    segments.push({ type: "text", value: text.slice(lastIndex) });
+  }
+
+  return segments.length ? segments : [{ type: "text", value: text }];
+}
+
 /**
- * Lie les mots-clés SEO vers l'URL cible (méthode backlink / netlinking).
+ * Lie les mots-clés SEO vers une URL (ou une map mot-clé → URL).
  * Priorité aux mots-clés les plus longs ; 1 lien max par mot-clé.
  */
 export function linkKeywordsInText(
@@ -91,11 +146,12 @@ export function linkKeywordsInText(
   keywords: string[],
   href: string,
   maxLinksPerKeyword = 1,
+  linkMap?: Map<string, string>,
 ): Segment[] {
   const sorted = [...new Set(keywords.map((k) => k.trim()).filter(Boolean))].sort(
     (a, b) => b.length - a.length,
   );
-  if (!sorted.length || !href) {
+  if (!sorted.length || (!href && !linkMap?.size)) {
     return [{ type: "text", value: text }];
   }
 
@@ -113,13 +169,14 @@ export function linkKeywordsInText(
     const index = match.index ?? 0;
     const key = value.toLowerCase();
     const count = used.get(key) ?? 0;
+    const target = linkMap?.get(key) || href;
 
     if (index > lastIndex) {
       segments.push({ type: "text", value: text.slice(lastIndex, index) });
     }
 
-    if (count < maxLinksPerKeyword) {
-      segments.push({ type: "link", value, href });
+    if (target && count < maxLinksPerKeyword) {
+      segments.push({ type: "link", value, href: target });
       used.set(key, count + 1);
     } else {
       segments.push({ type: "text", value });
@@ -133,6 +190,39 @@ export function linkKeywordsInText(
   }
 
   return segments.length ? segments : [{ type: "text", value: text }];
+}
+
+/** Applique markdown puis auto-liens mots-clés sur les segments texte restants. */
+export function linkParagraph(
+  text: string,
+  keywords: string[],
+  href: string | null,
+  linkMap: Map<string, string>,
+): Segment[] {
+  const withMarkdown = parseMarkdownLinks(text);
+  const out: Segment[] = [];
+
+  for (const segment of withMarkdown) {
+    if (segment.type === "link") {
+      out.push(segment);
+      continue;
+    }
+    if (!href && !linkMap.size) {
+      out.push(segment);
+      continue;
+    }
+    out.push(
+      ...linkKeywordsInText(
+        segment.value,
+        keywords,
+        href || [...linkMap.values()][0] || "",
+        1,
+        linkMap,
+      ),
+    );
+  }
+
+  return out;
 }
 
 function renderSegments(segments: Segment[], className?: string): ReactNode {
@@ -170,9 +260,11 @@ export function ArticleBacklinkContent({
   keywords: string[];
   targetUrl?: string | null;
 }) {
-  const allUrls = extractAllUrlsFromContent(content);
+  const { content: withoutMap, linkMap } = extractLinkMap(content);
+  const cleaned = stripTrailingBareUrls(withoutMap);
+  const allUrls = extractAllUrlsFromContent(cleaned);
   const homepage =
-    extractUrlFromContent(content) ||
+    extractUrlFromContent(cleaned) ||
     normalizeBacklinkUrl(targetUrl) ||
     allUrls[0] ||
     null;
@@ -183,12 +275,12 @@ export function ArticleBacklinkContent({
     : null;
   const linkKeywords = [
     ...keywords,
+    ...linkMap.keys(),
     ...(brandFromHost && brandFromHost.length > 2
       ? [brandFromHost, brandFromHost[0].toUpperCase() + brandFromHost.slice(1)]
       : []),
   ];
 
-  const cleaned = stripTrailingBareUrls(content);
   const paragraphs = cleaned
     .split(/\n{2,}|\r\n{2,}/)
     .flatMap((block) => block.split(/\n+/))
@@ -198,11 +290,12 @@ export function ArticleBacklinkContent({
   return (
     <div className="space-y-4 text-base leading-relaxed text-foreground">
       {paragraphs.map((paragraph, index) => {
+        const headingText = paragraph.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
         const isHeading =
-          paragraph.length < 90 &&
-          !paragraph.endsWith(".") &&
-          /^[A-ZÀÂÄÉÈÊËÏÎÔÙÛÜÇ0-9]/.test(paragraph) &&
-          !paragraph.includes("?");
+          headingText.length < 90 &&
+          !headingText.endsWith(".") &&
+          /^[A-ZÀÂÄÉÈÊËÏÎÔÙÛÜÇ0-9]/.test(headingText) &&
+          !headingText.includes("?");
 
         if (isHeading && index > 0) {
           return (
@@ -210,7 +303,7 @@ export function ArticleBacklinkContent({
               key={`h-${index}`}
               className="pt-2 text-2xl font-semibold tracking-tight text-[var(--brand-navy)]"
             >
-              {paragraph}
+              {renderSegments(parseMarkdownLinks(paragraph), linkClass)}
             </h2>
           );
         }
@@ -221,11 +314,9 @@ export function ArticleBacklinkContent({
 
         return (
           <p key={`p-${index}`} className="whitespace-pre-wrap">
-            {homepage
-              ? renderSegments(
-                  linkKeywordsInText(paragraph, linkKeywords, homepage),
-                )
-              : paragraph}
+            {renderSegments(
+              linkParagraph(paragraph, linkKeywords, homepage, linkMap),
+            )}
           </p>
         );
       })}
